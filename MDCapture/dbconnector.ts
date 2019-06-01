@@ -1,15 +1,15 @@
 import * as mariadb from 'mariadb'
-import { JsFixWinstonLogFactory, WinstonLogger, IJsFixConfig, IJsFixLogger, SessionMsgFactory, makeConfig, JsFixLoggerFactory } from 'jspurefix'
-import {IAppConfig, Common} from './common'
+import { JsFixWinstonLogFactory, WinstonLogger, IJsFixConfig, IJsFixLogger, SessionMsgFactory, makeConfig, JsFixLoggerFactory, Dictionary } from 'jspurefix'
+import { IAppConfig, Common } from './common'
 import { ILiveQuotes } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread'
 
 export class DBConnector {
     private readonly options: IAppConfig
-    private readonly pool : mariadb.Pool
+    private readonly pool: mariadb.Pool
     private readonly logger: IJsFixLogger
 
-    constructor(opt: IAppConfig, logFactory: JsFixLoggerFactory) {        
+    constructor(opt: IAppConfig, logFactory: JsFixLoggerFactory) {
         this.logger = logFactory.logger('dbconnector')
         this.options = opt;
         if (opt.DBHost) {
@@ -28,12 +28,11 @@ export class DBConnector {
                 database: opt.DBDatabase
             });
         }
-        
+
     }
     public async querySymbols(): Promise<string[]> {
-        debugger
         const conn = await this.pool.getConnection();
-        const rows: any[]  = await conn.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
+        const rows: any[] = await conn.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
         if (rows) {
             conn.end();
             return rows.map(i => i.currencypairname);
@@ -43,7 +42,30 @@ export class DBConnector {
             return undefined;
         };
     }
-    async updateLiveQuotes(lq: ILiveQuotes) {
+
+    /**
+     * queryLastAvgSpread
+     */
+    public async queryLastAvgSpreads(): Promise<Dictionary<AvgSpread>> {
+        const conn = await this.pool.getConnection();
+        const rows: any[] = await conn.query(`WITH ranked_rows AS (SELECT r.*, ROW_NUMBER() OVER (PARTITION BY Symbol ORDER BY ID DESC) AS rn FROM AverageSpreads AS r) SELECT * FROM ranked_rows WHERE rn = 1`);
+        conn.end();
+        if (rows) {
+            var ret = new Dictionary<AvgSpread>();
+            rows.forEach(row => {
+                let a = new AvgSpread(row.BrokerName, row.Symbol)
+                a.lastAvg = row.AvgSpread
+                ret.addUpdate(a.symbol, a)
+            })
+            return ret;
+        }
+        else {
+            this.logger.error(new Error('Cannot get Rows!'));
+            return undefined;
+        };
+    }
+
+    public async updateLiveQuotes(lq: ILiveQuotes) {
         try {
             //common.showNotify('Trying to update Live Quotes');
             //console.log(msgObj);
@@ -69,7 +91,7 @@ export class DBConnector {
     }
     async insertAvg(spreadAvg: AvgSpread[]) {
         try {
-            this.logger.info('Trying to insert average Quotes');
+            //this.logger.info('Trying to insert average Quotes');
             const conn = await this.pool.getConnection();
             spreadAvg.forEach(avg => {
                 avg.calculate();

@@ -4,16 +4,15 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "install": "cd node_modules/jspurefix && npm run unzip-repo",
     "build": "./node_modules/.bin/tsc",
     "start-inspect": "cd dist/MDCapture && node inspect app",
     "start": "cd dist/MDCapture && node app",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "cd node_modules/jspurefix && npm run unzip-repo"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "pvtienhoa",
   "license": "ISC",
   "dependencies": {
-    "@types/geojson": "^7946.0.7",
     "jspurefix": "github:pvtienhoa/jspurefix",
     "mariadb": "^2.0.5",
     "moment": "^2.24.0",
@@ -22,6 +21,7 @@
     "typings": "^2.1.1"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.7",
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.0.4",
     "@types/node-cron": "^2.0.2",

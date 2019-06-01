@@ -10,7 +10,10 @@ import {
     IMarketDataSnapshotFullRefresh,
     IMarketDataIncrementalRefresh,
     IMarketDataRequestReject,
-    IInstrmtMDReqGrp
+    IInstrmtMDReqGrp,
+    SecurityListRequestType,
+    ISecurityListRequest,
+    ITestRequest
 } from 'jspurefix/dist/types/FIX4.4/repo'
 import { MsgView, MsgType } from 'jspurefix';
 import { lchmod } from 'fs';
@@ -38,7 +41,7 @@ export interface IAvegareSpread {
 export class MarketDataFactory {
 
     /**
-     * marketDataRequest
+     * createMarketDataRequest
      */
     public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbols: string[]): IMarketDataRequest {
         let instruments = symbols.map(s => {
@@ -63,6 +66,19 @@ export class MarketDataFactory {
         } as IMarketDataRequest;
     }
 
+    public static createSecurityListRequest(requestId: string, msgType: SecurityListRequestType = SecurityListRequestType.Symbol): ISecurityListRequest {
+        return {
+            SecurityReqID: requestId,
+            SecurityListRequestType: msgType
+        } as ISecurityListRequest
+    }
+
+    public static createTestRequest(requestId: string) :ITestRequest {
+        return {
+            TestReqID: requestId
+        } as ITestRequest
+    }
+
     /**
      * parseLiveQuote
      */
@@ -77,7 +93,7 @@ export class MarketDataFactory {
                 let lq: ILiveQuotes = {
                     TimeStamp: md.StandardHeader.SendingTime,
                     Symbol: md.Instrument.Symbol,
-                    BrokerName: 'nBroker',
+                    BrokerName: md.MDReqID,
                     Bid: b,
                     Ask: a,
                     Spread: Common.roundToFixed(a - b,5),

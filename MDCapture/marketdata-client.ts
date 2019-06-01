@@ -9,17 +9,18 @@ import {
 import * as cron from 'node-cron'
 
 import {
-    IMarketDataIncrementalRefresh,
-    IMarketDataSnapshotFullRefresh,
-    MDEntryType,
     IMarketDataRequest,
-    SubscriptionRequestType
+    SubscriptionRequestType,
+    ISecurityListRequest,
+    SecurityListRequestType,
 } from 'jspurefix/dist/types/FIX4.4/repo'
 
 import { MarketDataFactory } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread';
 import { DBConnector } from './dbconnector';
 import { IAppConfig } from './common';
+import { EventEmitter } from 'events';
+import { resolve } from 'dns';
 
 
 export class MarketDataClient extends AsciiSession {
@@ -27,44 +28,55 @@ export class MarketDataClient extends AsciiSession {
     private readonly fixLog: IJsFixLogger
     private avgSpreads: Dictionary<AvgSpread>
     private dbConnector: DBConnector
+    private cronJob: any
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config)
         this.logReceivedMsgs = true
-        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.txt`)
+        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.log`)
         this.logger = config.logFactory.logger(`${this.me}:MarketDataClient`)
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
+        // this.dbConnector.queryLastAvgSpreads().then(avgs => {
+        //     this.avgSpreads = avgs
+        // })
         this.avgSpreads = new Dictionary<AvgSpread>()
+        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
+            //cron.schedule(`*/${appConfig.AvgTerm}  * * * *`, () => {
+            this.logger.info(`inserting AVGSpreads...`)
+            this.dbConnector.insertAvg(this.avgSpreads.values())
+        }, { scheduled: false })
     }
 
+    // onApp Event Listener
     protected onApplicationMsg(msgType: string, view: MsgView): void {
-        this.logger.info(`${view.toJson()}`)
-        if (msgType === MsgType.MarketDataSnapshotFullRefresh || msgType === MsgType.MarketDataIncrementalRefresh) {
-            let lq = MarketDataFactory.parseLiveQuote(msgType, view)
-            this.dbConnector.updateLiveQuotes(lq)
-            let a = this.avgSpreads.get(lq.Symbol)
-            if (a) a.addSum(lq.Spread)
-            else a = new AvgSpread(this.appConfig.BrokerName, lq.Symbol)
-            this.avgSpreads.addUpdate(lq.Symbol, a)
+        this.logger.debug(`${view.toJson()}`)
+        switch (msgType) {
+            case MsgType.MarketDataSnapshotFullRefresh:
+            case MsgType.MarketDataIncrementalRefresh: {
+                let lq = MarketDataFactory.parseLiveQuote(msgType, view)
+                this.dbConnector.updateLiveQuotes(lq)
+                let a = this.avgSpreads.get(lq.Symbol)
+                if (a) a.addSum(lq.Spread)
+                else {
+                    a = new AvgSpread(this.appConfig.BrokerName, lq.Symbol)
+                    a.addSum(lq.Spread)
+                }
+                this.avgSpreads.addUpdate(a.symbol, a)
+                break
+            }
+            case MsgType.SecurityList: {
+                this.logger.info('Security List received!')
+                this.done();
+            }
+            default:
+                break
         }
-
-        // switch (msgType) {
-        //     case MsgType.MarketDataSnapshotFullRefresh: {
-        //         // create an object and cast to the interface
-        //         const md: IMarketDataSnapshotFullRefresh = view.toObject()
-        //         this.fullRefresh.addUpdate(md.MDReqID, md)
-        //         this.logger.info(`[Market Data Snapshot Full Refresh: ${this.fullRefresh.count()}] received tc MDReqID = ${md.MDReqID} Symbol = ${md.Instrument.Symbol} Bid = ${md.MDFullGrp.find(g => g.MDEntryType == MDEntryType.Bid).MDEntryPx}`)// Ask = ${md.MDFullGrp.forEach(g => g.toString())}`)
-        //         break
-        //     }
-
-        //     // case MsgType.MarketDataIncrementalRefresh: {
-        //     //     const md: IMarketDataIncrementalRefresh = view.toObject()
-        //     //     this.logger.info(`[Market Data Incremental Refresh: ${this.incRefresh.count()}] received tc MDReqID = ${md.MDReqID} Bid - ${md.MDIncGrp.find(g => g.MDEntryType == MDEntryType.Bid).Instrument.Symbol} = ${md.MDIncGrp.find(g => g.MDEntryType == MDEntryType.Bid).MDEntryPx} Ask - ${md.MDIncGrp.find(g => g.MDEntryType == MDEntryType.Offer).Instrument.Symbol} = ${md.MDIncGrp.find(g => g.MDEntryType == MDEntryType.Offer).MDEntryPx}`)
-        //     //     break
-        //     // }
-        // }
     }
+
+    // onStop Event Listener
     protected onStopped(): void {
-        this.logger.info('stopped')
+        this.logger.info('Stopped!')
+
+        this.cronJob.stop();
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -77,18 +89,29 @@ export class MarketDataClient extends AsciiSession {
         this.fixLog.info(AsciiSession.asPiped(txt))
     }
 
+    // onReady Event Listener
     protected onReady(view: MsgView): void {
-        cron.schedule(`*/5 * * * * *`, () => {
-            //cron.schedule(`*/5 * * * * *`, () => {
-            this.logger.info(`inserting AVGSpreads...`)
-            console.log(`inserting AVGSpreads...`)
-            this.dbConnector.insertAvg(this.avgSpreads.values())
-        })
         this.logger.info('ready')
+
+        //Start Cron-Job
+        this.cronJob.start()
+
+        // Send Test msg to Server
+        // this.logger.info('send test message...')
+        // const t: ITestRequest = MarketDataFactory.createTestRequest(this.appConfig.BrokerName)
+        // this.send(MsgType.TestRequest,t)
+
+        // Query Symbol list from server
+        // this.logger.info('query symbol list from server...')
+        // const slr: ISecurityListRequest = MarketDataFactory.createSecurityListRequest(this.appConfig.BrokerName,SecurityListRequestType.AllSecurities)
+        // this.send(MsgType.SecurityListRequest,slr)
+
+        // Send MD Request to server
         this.dbConnector.querySymbols().then(symbols => {
             const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
-            // send request to server
             this.send(MsgType.MarketDataRequest, mdr)
+
+            // Set Logout timeout
             // const logoutSeconds = 30
             // this.logger.info(`will logout after ${logoutSeconds}`)
             // setTimeout(() => {
@@ -97,10 +120,9 @@ export class MarketDataClient extends AsciiSession {
         })
     }
 
+    // onLogon Event Listener
     protected onLogon(view: MsgView, user: string, password: string): boolean {
         this.logger.info(`peer logs in user ${user}`)
-        
         return true
-
     }
 }

@@ -1,7 +1,7 @@
 import { MarketDataClient } from './marketdata-client'
 import { IJsFixConfig, initiator } from 'jspurefix'
 import { Launcher } from '../launcher'
-import { IAppConfig } from './common';
+import { EventEmitter } from 'events';
 
 class AppNfixLauncher extends Launcher {
     public constructor () {

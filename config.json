@@ -8,7 +8,6 @@
     "FUserName" : "D103289979",
     "FPassword" : "5020",
     "FMsgType"  : "FIX.4.4",
-    "FDictPath" : "./support/spec/FIXFXCM10.xml",
     "FBrokerName": "nBroker",
     "DBHost"    : "localhost",
     "DBDatabase": "nixfode",

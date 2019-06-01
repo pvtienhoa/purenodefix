@@ -11,7 +11,6 @@ export interface IAppConfig {
     FUserName: string
     FPassword: string
     FMsgType: string
-    FDictPath: string
     FBrokerName: string
     DBHost: string
     DBDatabase: string
@@ -30,8 +29,7 @@ export class Common {
     }
 
     public static roundToFixed(num: number, fpoint: number = 5) : number {
-        let multiply = +(num + "e+" + fpoint)
-        let r = Math.round(+(multiply + "e+2"))
+        let r = Math.round(+(num + "e+" + fpoint))
         return +(r + "e-" + fpoint);
     }
 
