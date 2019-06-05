@@ -23,7 +23,10 @@ export class AvgSpread {
         this.count = 0;
     };
     calculate() {
-        if (this.count > 0) this.avgSpread = Common.roundToFixed(this.sum / this.count,this.fpoint)
+        console.log(this.toString())
+        if (this.count > 0) {
+            this.avgSpread = this.sum / this.count
+        }
     };
     addSum(s: number) {
         this.sum += s;

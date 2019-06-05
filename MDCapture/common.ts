@@ -1,6 +1,10 @@
 import * as moment from 'moment'
 import * as fs from 'fs'
 
+export enum SubscriptionRequestType {
+    
+}
+
 export interface IAppConfig {
     BrokerName: string
     FHost: string

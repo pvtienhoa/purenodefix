@@ -10,9 +10,7 @@ import * as cron from 'node-cron'
 
 import {
     IMarketDataRequest,
-    SubscriptionRequestType,
-    ISecurityListRequest,
-    SecurityListRequestType,
+    ISecurityListRequest
 } from 'jspurefix/dist/types/FIX4.4/repo'
 
 import { MarketDataFactory } from './marketdata-factory'
@@ -21,6 +19,7 @@ import { DBConnector } from './dbconnector';
 import { IAppConfig } from './common';
 import { EventEmitter } from 'events';
 import { resolve } from 'dns';
+import { SubscriptionRequestType } from 'jspurefix/dist/types/FIX4.4/repo';
 
 
 export class MarketDataClient extends AsciiSession {
@@ -29,6 +28,7 @@ export class MarketDataClient extends AsciiSession {
     private avgSpreads: Dictionary<AvgSpread>
     private dbConnector: DBConnector
     private cronJob: any
+    private msgCount: number
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config)
         this.logReceivedMsgs = true
@@ -42,18 +42,31 @@ export class MarketDataClient extends AsciiSession {
         this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
             //cron.schedule(`*/${appConfig.AvgTerm}  * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`)
-            this.dbConnector.insertAvg(this.avgSpreads.values())
+            // this.avgSpreads.values().forEach(a => {
+            //     a.calculate()
+            //     this.logger.info(a.avgSpread.toString())
+            //     a.reset()
+            // })
+            //this.dbConnector.insertAvg(this.avgSpreads.values())
         }, { scheduled: false })
+        this.msgCount = 0        
     }
 
     // onApp Event Listener
     protected onApplicationMsg(msgType: string, view: MsgView): void {
-        this.logger.debug(`${view.toJson()}`)
+        //this.logger.debug(`${view.toJson()}`)
         switch (msgType) {
             case MsgType.MarketDataSnapshotFullRefresh:
             case MsgType.MarketDataIncrementalRefresh: {
+                this.msgCount++
                 let lq = MarketDataFactory.parseLiveQuote(msgType, view)
-                this.dbConnector.updateLiveQuotes(lq)
+                this.logger.info(`Symbol = ${lq.Symbol}\n
+                Ask = ${lq.Ask} \n
+                Bid = ${lq.Bid}\n
+                Spread = ${lq.Spread}\n
+                TimeStamp = ${lq.TimeStamp}\n
+                fpoint = ${lq.fpoint}`)
+                //this.dbConnector.updateLiveQuotes(lq)
                 let a = this.avgSpreads.get(lq.Symbol)
                 if (a) a.addSum(lq.Spread)
                 else {
@@ -65,7 +78,7 @@ export class MarketDataClient extends AsciiSession {
             }
             case MsgType.SecurityList: {
                 this.logger.info('Security List received!')
-                this.done();
+                //this.done();
             }
             default:
                 break
@@ -93,9 +106,6 @@ export class MarketDataClient extends AsciiSession {
     protected onReady(view: MsgView): void {
         this.logger.info('ready')
 
-        //Start Cron-Job
-        this.cronJob.start()
-
         // Send Test msg to Server
         // this.logger.info('send test message...')
         // const t: ITestRequest = MarketDataFactory.createTestRequest(this.appConfig.BrokerName)
@@ -107,17 +117,23 @@ export class MarketDataClient extends AsciiSession {
         // this.send(MsgType.SecurityListRequest,slr)
 
         // Send MD Request to server
-        this.dbConnector.querySymbols().then(symbols => {
-            const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
-            this.send(MsgType.MarketDataRequest, mdr)
+        // this.dbConnector.querySymbols().then(symbols => {
+        //     const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
+        //     this.send(MsgType.MarketDataRequest, mdr)
 
-            // Set Logout timeout
-            // const logoutSeconds = 30
-            // this.logger.info(`will logout after ${logoutSeconds}`)
-            // setTimeout(() => {
-            //     this.done()
-            // }, logoutSeconds * 1000)
-        })
+        //     //Start Cron-Job
+        //     this.cronJob.start()
+        // })
+        let symbols = ['AUD/CAD','AUD/CHF','AUD/JPY','AUD/NZD','AUD/USD','CAD/CHF','CAD/JPY','CHF/JPY','EUR/AUD','EUR/CAD','EUR/CHF','EUR/GBP','EUR/JPY','EUR/USD']
+        const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
+        this.send(MsgType.MarketDataRequest, mdr)
+        this.cronJob.start()
+        process.on('SIGINT', function () {
+            console.log("Caught interrupt signal");
+            this.logger.info(`Total Mesages Received: ${this.msgCount}`)
+            this.done();
+            process.exit()
+        });
     }
 
     // onLogon Event Listener

@@ -1,22 +1,13 @@
 import {
-    SubscriptionRequestType,
-    MDUpdateType,
-    MDEntryType,
-    MDUpdateAction,
-    MDReqRejReason,
-    MDImplicitDelete,
     IInstrument,
     IMarketDataRequest,
     IMarketDataSnapshotFullRefresh,
     IMarketDataIncrementalRefresh,
-    IMarketDataRequestReject,
-    IInstrmtMDReqGrp,
-    SecurityListRequestType,
     ISecurityListRequest,
-    ITestRequest
-} from 'jspurefix/dist/types/FIX4.4/repo'
+    ITestRequest,
+    IMarketDataRequestNoRelatedSym
+} from 'jspurefix/dist/types/FIXFXCM/quickfix'
 import { MsgView, MsgType } from 'jspurefix';
-import { lchmod } from 'fs';
 import { Common } from './common';
 
 export interface ILiveQuotes {
@@ -43,30 +34,32 @@ export class MarketDataFactory {
     /**
      * createMarketDataRequest
      */
-    public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbols: string[]): IMarketDataRequest {
+    public static createMarketDataRequest(requestId: string, msgType: string = '1', symbols: string[]): IMarketDataRequest {
         let instruments = symbols.map(s => {
             let i :IInstrument = { Symbol: s}
-            let g :IInstrmtMDReqGrp = {Instrument: i}
+            let g :IMarketDataRequestNoRelatedSym = {Instrument: i}
             return g
          })
         return {
             SubscriptionRequestType: msgType,
             MDReqID: requestId,
             MarketDepth: 0,
-            MDUpdateType: MDUpdateType.IncrementalRefresh,
-            InstrmtMDReqGrp: instruments,
-            MDReqGrp: [
+            MDUpdateType: 1,
+            NoRelatedSym: [{
+                Instrument: {Symbol: "EUR/USD"}
+            }],
+            NoMDEntryTypes: [
                 {
-                    MDEntryType: MDEntryType.Bid
+                    MDEntryType: "0"
                 },
                 {
-                    MDEntryType: MDEntryType.Offer
+                    MDEntryType: "1"
                 }
             ]
         } as IMarketDataRequest;
     }
 
-    public static createSecurityListRequest(requestId: string, msgType: SecurityListRequestType = SecurityListRequestType.Symbol): ISecurityListRequest {
+    public static createSecurityListRequest(requestId: string, msgType: number = 0): ISecurityListRequest {
         return {
             SecurityReqID: requestId,
             SecurityListRequestType: msgType
@@ -87,11 +80,11 @@ export class MarketDataFactory {
             case MsgType.MarketDataSnapshotFullRefresh: {
                 // create an object and cast to the interface
                 const md: IMarketDataSnapshotFullRefresh = msgView.toObject()
-                const b = (md.MDFullGrp.find(g => g.MDEntryType === MDEntryType.Bid)) ? md.MDFullGrp.find(g => g.MDEntryType === MDEntryType.Bid).MDEntryPx : 0
-                const a = (md.MDFullGrp.find(g => g.MDEntryType === MDEntryType.Offer)) ? md.MDFullGrp.find(g => g.MDEntryType === MDEntryType.Offer).MDEntryPx : 0
+                const b = (md.NoMDEntries.find(g => g.MDEntryType === "0")) ? md.NoMDEntries.find(g => g.MDEntryType === "0").MDEntryPx : 0
+                const a = (md.NoMDEntries.find(g => g.MDEntryType === "1")) ? md.NoMDEntries.find(g => g.MDEntryType === "1").MDEntryPx : 0
 
                 let lq: ILiveQuotes = {
-                    TimeStamp: md.StandardHeader.SendingTime,
+                    TimeStamp: null,
                     Symbol: md.Instrument.Symbol,
                     BrokerName: md.MDReqID,
                     Bid: b,
@@ -105,12 +98,12 @@ export class MarketDataFactory {
 
             case MsgType.MarketDataIncrementalRefresh: {
                 const md: IMarketDataIncrementalRefresh = msgView.toObject()
-                const b = (md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Bid)) ? md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Bid).MDEntryPx : 0
-                const a = (md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Offer)) ? md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Offer).MDEntryPx : 0
+                const b = (md.NoMDEntries.find(g => g.MDEntryType === "0")) ? md.NoMDEntries.find(g => g.MDEntryType === "0").MDEntryPx : 0
+                const a = (md.NoMDEntries.find(g => g.MDEntryType === "1")) ? md.NoMDEntries.find(g => g.MDEntryType === "1").MDEntryPx : 0
 
                 let lq: ILiveQuotes = {
-                    TimeStamp: md.StandardHeader.SendingTime,
-                    Symbol: md.MDIncGrp[0].Instrument.Symbol,
+                    TimeStamp: null,
+                    Symbol: md.NoMDEntries[0].Instrument.Symbol,
                     BrokerName: 'nBroker',
                     Bid: b,
                     Ask: a,

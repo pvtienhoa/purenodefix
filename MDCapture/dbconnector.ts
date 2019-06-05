@@ -6,26 +6,28 @@ import { AvgSpread } from './AvgSpread'
 
 export class DBConnector {
     private readonly options: IAppConfig
-    private readonly pool: mariadb.Pool
+    private readonly pool: any
     private readonly logger: IJsFixLogger
 
     constructor(opt: IAppConfig, logFactory: JsFixLoggerFactory) {
         this.logger = logFactory.logger('dbconnector')
         this.options = opt;
-        if (opt.DBHost) {
+        debugger
+        if (this.options.DBHost) {
             this.pool = mariadb.createPool({
-                host: opt.DBHost,
-                port: 3306,
-                user: opt.DBUserName,
-                password: opt.DBPassword,
-                database: opt.DBDatabase
+                host: this.options.DBHost,
+                user: this.options.DBUserName,
+                password: this.options.DBPassword,
+                database: this.options.DBDatabase,
+                connectionLimit: 20
             });
         } else {
             this.pool = mariadb.createPool({
-                socketPath: opt.DBSocketPath,
-                user: opt.DBUserName,
-                password: opt.DBPassword,
-                database: opt.DBDatabase
+                socketPath: this.options.DBSocketPath,
+                user: this.options.DBUserName,
+                password: this.options.DBPassword,
+                database: this.options.DBDatabase,                
+                connectionLimit: 20
             });
         }
 
@@ -84,7 +86,7 @@ export class DBConnector {
                 (lq.Ask) ? lq.Ask : 'Ask',
                 lq.Spread,
                 lq.Symbol]);
-            conn.end();
+            //conn.end();
         } catch (err) {
             this.logger.error(err);
         }
