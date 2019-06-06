@@ -35,9 +35,9 @@ export class MarketDataClient extends AsciiSession {
         this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.log`)
         this.logger = config.logFactory.logger(`${this.me}:MarketDataClient`)
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
-        // this.dbConnector.queryLastAvgSpreads().then(avgs => {
-        //     this.avgSpreads = avgs
-        // })
+        this.dbConnector.queryLastAvgSpreads().then(avgs => {
+            this.avgSpreads = avgs
+        })
         this.avgSpreads = new Dictionary<AvgSpread>()
         this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
             //cron.schedule(`*/${appConfig.AvgTerm}  * * * *`, () => {
@@ -60,13 +60,13 @@ export class MarketDataClient extends AsciiSession {
             case MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++
                 let lq = MarketDataFactory.parseLiveQuote(msgType, view)
-                this.logger.info(`Symbol = ${lq.Symbol}\n
-                Ask = ${lq.Ask} \n
-                Bid = ${lq.Bid}\n
-                Spread = ${lq.Spread}\n
-                TimeStamp = ${lq.TimeStamp}\n
-                fpoint = ${lq.fpoint}`)
-                //this.dbConnector.updateLiveQuotes(lq)
+                // this.logger.info(`Symbol = ${lq.Symbol}\n
+                // Ask = ${lq.Ask} \n
+                // Bid = ${lq.Bid}\n
+                // Spread = ${lq.Spread}\n
+                // TimeStamp = ${lq.TimeStamp}\n
+                // fpoint = ${lq.fpoint}`)
+                this.dbConnector.updateLiveQuotes(lq)
                 let a = this.avgSpreads.get(lq.Symbol)
                 if (a) a.addSum(lq.Spread)
                 else {
@@ -117,17 +117,17 @@ export class MarketDataClient extends AsciiSession {
         // this.send(MsgType.SecurityListRequest,slr)
 
         // Send MD Request to server
-        // this.dbConnector.querySymbols().then(symbols => {
-        //     const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
-        //     this.send(MsgType.MarketDataRequest, mdr)
+        this.dbConnector.querySymbols().then(symbols => {
+            const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
+            this.send(MsgType.MarketDataRequest, mdr)
 
-        //     //Start Cron-Job
-        //     this.cronJob.start()
-        // })
-        let symbols = ['AUD/CAD','AUD/CHF','AUD/JPY','AUD/NZD','AUD/USD','CAD/CHF','CAD/JPY','CHF/JPY','EUR/AUD','EUR/CAD','EUR/CHF','EUR/GBP','EUR/JPY','EUR/USD']
-        const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
-        this.send(MsgType.MarketDataRequest, mdr)
-        this.cronJob.start()
+            //Start Cron-Job
+            this.cronJob.start()
+        })
+        // let symbols = ['AUD/CAD','AUD/CHF','AUD/JPY','AUD/NZD','AUD/USD','CAD/CHF','CAD/JPY','CHF/JPY','EUR/AUD','EUR/CAD','EUR/CHF','EUR/GBP','EUR/JPY','EUR/USD']
+        // const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.BrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbols)
+        // this.send(MsgType.MarketDataRequest, mdr)
+        // this.cronJob.start()
         process.on('SIGINT', function () {
             console.log("Caught interrupt signal");
             this.logger.info(`Total Mesages Received: ${this.msgCount}`)
