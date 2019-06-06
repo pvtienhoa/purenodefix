@@ -39,7 +39,7 @@ export class MarketDataClient extends AsciiSession {
         //     this.avgSpreads = avgs
         // })
         this.avgSpreads = new Dictionary<AvgSpread>()
-        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
+        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             //cron.schedule(`*/${appConfig.AvgTerm}  * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`)
             // this.avgSpreads.values().forEach(a => {
@@ -130,7 +130,7 @@ export class MarketDataClient extends AsciiSession {
         // this.cronJob.start()
         process.on('SIGINT', function () {
             console.log("Caught interrupt signal");
-            this.logger.info(`Total Mesages Received: ${this.msgCount}`)
+            console.log(`Total Mesages Received: ${this.msgCount}`)
             this.done();
             process.exit()
         });

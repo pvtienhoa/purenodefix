@@ -86,7 +86,7 @@ export class DBConnector {
                 (lq.Ask) ? lq.Ask : 'Ask',
                 lq.Spread,
                 lq.Symbol]);
-            //conn.end();
+            conn.end();
         } catch (err) {
             this.logger.error(err);
         }
