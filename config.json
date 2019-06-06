@@ -1,5 +1,4 @@
 {
-    "BrokerName": "nBroker",
     "FHost"     : "fixdemo.fxcorporate.com",
     "FPort"     : "9001",
     "FSenderID" : "MD_D103289979_client1",
@@ -10,6 +9,7 @@
     "FMsgType"  : "FIX.4.4",
     "FBrokerName": "nBroker",
     "DBHost"    : "localhost",
+    "DBPort"    : "3306",
     "DBDatabase": "nodefix",
     "DBUserName": "nfuser",
     "DBPassword": "123456",

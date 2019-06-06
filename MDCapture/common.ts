@@ -6,7 +6,6 @@ export enum SubscriptionRequestType {
 }
 
 export interface IAppConfig {
-    BrokerName: string
     FHost: string
     FPort: number
     FSenderID: string
@@ -46,7 +45,7 @@ export class Common {
             "application": {
                 "reconnectSeconds": 10,
                 "type": "initiator",
-                "name": appConfig.BrokerName,
+                "name": appConfig.FBrokerName,
                 "tcp": {
                   "host" : appConfig.FHost,
                   "port": appConfig.FPort

@@ -3,6 +3,7 @@ import { JsFixWinstonLogFactory, WinstonLogger, IJsFixConfig, IJsFixLogger, Sess
 import { IAppConfig, Common } from './common'
 import { ILiveQuotes } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread'
+import { ILiveQuote, IAverageSpread } from './LiveQuote';
 
 export class DBConnector {
     private readonly options: IAppConfig
@@ -26,18 +27,18 @@ export class DBConnector {
                 socketPath: this.options.DBSocketPath,
                 user: this.options.DBUserName,
                 password: this.options.DBPassword,
-                database: this.options.DBDatabase,                
+                database: this.options.DBDatabase,
                 connectionLimit: 20
             });
         }
 
     }
-    public async querySymbols(): Promise<string[]> {
+    public async querySymbols(): Promise<any[]> {
         const conn = await this.pool.getConnection();
         const rows: any[] = await conn.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
+        conn.end();
         if (rows) {
-            conn.end();
-            return rows.map(i => i.currencypairname);
+            return rows;
         }
         else {
             this.logger.error(new Error('Cannot get Rows!'));
@@ -67,42 +68,83 @@ export class DBConnector {
         };
     }
 
-    public async updateLiveQuotes(lq: ILiveQuotes) {
+    // public async updateLiveQuotes(lq: ILiveQuotes) {
+    //     try {
+    //         //common.showNotify('Trying to update Live Quotes');
+    //         //console.log(msgObj);
+    //         const conn = await this.pool.getConnection();
+    //         await conn.query(`
+    //     UPDATE ${this.options.TblLiveQuotes} SET 
+    //         TimeStamp = ?, 
+    //         BrokerName = ?, 
+    //         Bid = ?, 
+    //         Ask = ?, 
+    //         Spread = ?  
+    //     WHERE Symbol = ?;`,
+    //             [(lq.TimeStamp) ? Common.getTimeStamp(lq.TimeStamp) : 'TimeStamp',
+    //             lq.BrokerName,
+    //             (lq.Bid) ? lq.Bid : 'Bid',
+    //             (lq.Ask) ? lq.Ask : 'Ask',
+    //             lq.Spread,
+    //             lq.Symbol]);
+    //         conn.end();
+    //     } catch (err) {
+    //         this.logger.error(err);
+    //     }
+    // }
+
+    public async updateLiveQuotes(lqs: ILiveQuote[]) {
         try {
-            //common.showNotify('Trying to update Live Quotes');
-            //console.log(msgObj);
-            const conn = await this.pool.getConnection();
-            await conn.query(`
-        UPDATE ${this.options.TblLiveQuotes} SET 
-            TimeStamp = ?, 
-            BrokerName = ?, 
-            Bid = ?, 
-            Ask = ?, 
-            Spread = ?  
-        WHERE Symbol = ?;`,
-                [(lq.TimeStamp) ? Common.getTimeStamp(lq.TimeStamp) : 'TimeStamp',
-                lq.BrokerName,
-                (lq.Bid) ? lq.Bid : 'Bid',
-                (lq.Ask) ? lq.Ask : 'Ask',
-                lq.Spread,
-                lq.Symbol]);
-            conn.end();
-        } catch (err) {
-            this.logger.error(err);
+            var lqParams: any[] = [];
+            lqs.forEach(lq => {
+                if (lq.lqFlag) {
+                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, lq.spread, lq.symbol])
+                }
+            })
+            if (lqParams.length > 0) {
+                this.pool.batch(`
+                UPDATE ${this.options.TblLiveQuotes} SET 
+                    TimeStamp = ?, 
+                    BrokerName = ?, 
+                    Bid = ?, 
+                    Ask = ?, 
+                    Spread = ?  
+                WHERE Symbol = ?;`, lqParams);
+            }
+        } catch (error) {
+            this.logger.error(new Error('error updating LQ into DB - ' + error.toString()))
         }
     }
-    async insertAvg(spreadAvg: AvgSpread[]) {
+
+    // async insertAvg(spreadAvg: AvgSpread[]) {
+    //     try {
+    //         //this.logger.info('Trying to insert average Quotes');
+    //         const conn = await this.pool.getConnection();
+    //         spreadAvg.forEach(avg => {
+    //             avg.calculate();
+    //             conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+    //             avg.reset();
+    //         });
+    //         conn.end();
+    //     } catch (err) {
+    //         this.logger.error(new Error("not connected due to error: " + err));
+    //     }
+    // }
+    async insertAvgSpreads(avgSpreads: IAverageSpread[]) {
         try {
-            //this.logger.info('Trying to insert average Quotes');
-            const conn = await this.pool.getConnection();
-            spreadAvg.forEach(avg => {
-                avg.calculate();
-                conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
-                avg.reset();
+            var aqParams: any[] = [];
+            
+            avgSpreads.forEach(avg => {
+                if(avg.avgFlag){
+                    avg.avgCalc();
+                    aqParams.push([Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    // conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    avg.reset();
+                }                
             });
-            conn.end();
+            this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`,aqParams);
         } catch (err) {
-            this.logger.error(new Error("not connected due to error: " + err));
+            this.logger.error(new Error("Error insertig AvgSpreads to DB - " + err));
         }
     }
 }
