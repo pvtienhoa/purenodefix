@@ -2,7 +2,7 @@ import * as path from 'path'
 import { JsFixWinstonLogFactory, WinstonLogger, IJsFixConfig, IJsFixLogger, SessionMsgFactory, makeConfig } from 'jspurefix'
 import { Common, IAppConfig } from './MDCapture/common'
 import { EventEmitter } from 'events';
-const logFactory = new JsFixWinstonLogFactory(WinstonLogger.consoleOptions('info'))
+const logFactory = new JsFixWinstonLogFactory(WinstonLogger.consoleOptions('debug'))
 
 export abstract class Launcher {
     protected appConfig: IAppConfig
