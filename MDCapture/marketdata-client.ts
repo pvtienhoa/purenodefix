@@ -35,9 +35,9 @@ export class MarketDataClient extends AsciiSession {
         this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.log`)
         this.logger = config.logFactory.logger(`${this.me}:MarketDataClient`)
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
-        this.dbConnector.queryLastAvgSpreads().then(avgs => {
-            this.avgSpreads = avgs
-        })
+        // this.dbConnector.queryLastAvgSpreads().then(avgs => {
+        //     this.avgSpreads = avgs
+        // })
         this.avgSpreads = new Dictionary<AvgSpread>()
         this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
             //cron.schedule(`*/${appConfig.AvgTerm}  * * * *`, () => {
@@ -47,7 +47,7 @@ export class MarketDataClient extends AsciiSession {
             //     this.logger.info(a.avgSpread.toString())
             //     a.reset()
             // })
-            //this.dbConnector.insertAvg(this.avgSpreads.values())
+            this.dbConnector.insertAvg(this.avgSpreads.values())
         }, { scheduled: false })
         this.msgCount = 0        
     }
