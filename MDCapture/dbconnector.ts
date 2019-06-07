@@ -34,9 +34,7 @@ export class DBConnector {
 
     }
     public async querySymbols(): Promise<any[]> {
-        const conn = await this.pool.getConnection();
-        const rows: any[] = await conn.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
-        conn.end();
+        const rows: any[] = await this.pool.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
         if (rows) {
             return rows;
         }
@@ -95,6 +93,9 @@ export class DBConnector {
 
     public async updateLiveQuotes(lqs: ILiveQuote[]) {
         try {
+            if (this.pool.idleConnections() <= 1) {
+                this.logger.warning('No idle Connection... Skipped writing to DB!')
+            }
             var lqParams: any[] = [];
             lqs.forEach(lq => {
                 if (lq.lqFlag) {
@@ -102,7 +103,7 @@ export class DBConnector {
                 }
             })
             if (lqParams.length > 0) {
-                this.pool.batch(`
+                await this.pool.batch(`
                 UPDATE ${this.options.TblLiveQuotes} SET 
                     TimeStamp = ?, 
                     BrokerName = ?, 
@@ -132,17 +133,19 @@ export class DBConnector {
     // }
     async insertAvgSpreads(avgSpreads: IAverageSpread[]) {
         try {
+            if (!this.pool.idleConnections()) {
+                this.logger.warning('No idle Connection... Skipped writing to DB!')
+            }
             var aqParams: any[] = [];
-            
             avgSpreads.forEach(avg => {
-                if(avg.avgFlag){
+                if (avg.avgFlag) {
                     avg.avgCalc();
                     aqParams.push([Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
                     // conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
                     avg.reset();
-                }                
+                }
             });
-            this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`,aqParams);
+            await this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams);
         } catch (err) {
             this.logger.error(new Error("Error insertig AvgSpreads to DB - " + err));
         }

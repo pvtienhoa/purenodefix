@@ -131,8 +131,14 @@ export class MarketDataClient extends AsciiSession {
                 this.cronJob.start();
                 setInterval(() => {
                     this.logger.info(`updating LiveQuotes...`);
-                    if (this.liveQuotes && this.dbConnector) this.dbConnector.updateLiveQuotes(this.liveQuotes.values());
-                }, 100);
+                    if (this.liveQuotes && this.dbConnector) {
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values());
+                        this.liveQuotes.values().forEach(lq => {
+                            lq.lqFlag = false;
+                            this.liveQuotes.addUpdate(lq.symbol,lq);
+                        });
+                    }
+                }, 200);
             })
         } catch (error) {
             this.logger.error(error);
