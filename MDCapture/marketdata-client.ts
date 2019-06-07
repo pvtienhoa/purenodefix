@@ -23,22 +23,24 @@ import { SubscriptionRequestType } from 'jspurefix/dist/types/FIX4.4/repo';
 export class MarketDataClient extends AsciiSession {
     private readonly logger: IJsFixLogger
     private readonly fixLog: IJsFixLogger
+    private readonly eventLog: IJsFixLogger
     private avgSpreads: Dictionary<AvgSpread>
     private liveQuotes: Dictionary<LiveQuote>
     private dbConnector: DBConnector
     private cronJob: any
     private msgCount: number
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
-        super(config)
-        this.logReceivedMsgs = true
-        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.log`)
-        this.logger = config.logFactory.logger(`${this.me}:MarketDataClient`)
+        super(config);
+        this.logReceivedMsgs = true;
+        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.msgLog`,5 * 1024 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.eventlog`,100 * 1024 * 1024);
+        this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
-        this.avgSpreads = new Dictionary<AvgSpread>()
-        this.liveQuotes = new Dictionary<LiveQuote>()
-        this.msgCount = 0
+        this.avgSpreads = new Dictionary<AvgSpread>();
+        this.liveQuotes = new Dictionary<LiveQuote>();
+        this.msgCount = 0;
 
-        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * * *`, () => {
+        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`)
             if (this.liveQuotes && this.dbConnector) this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
         }, { scheduled: false });
@@ -82,8 +84,8 @@ export class MarketDataClient extends AsciiSession {
 
     // onStop Event Listener
     protected onStopped(): void {
-        this.logger.info('Stopped!')
-
+        this.eventLog.info('Client stopped!');
+        this.logger.info('Stopped!');
         this.cronJob.stop();
     }
 
@@ -113,6 +115,7 @@ export class MarketDataClient extends AsciiSession {
 
         try {
             this.dbConnector.querySymbols().then(symbols => {
+                this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`)
                 var symbolList: string[] = []
                 // Query data from Symbols table and create LiveQuote Dictionary
                 symbols.forEach(r => {
@@ -125,10 +128,13 @@ export class MarketDataClient extends AsciiSession {
                 const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.FBrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbolList);
 
                 // Send MD Request to server
+                this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
                 this.send(MsgType.MarketDataRequest, mdr)
 
-                //Start Cron-Jobs
+                //Start Cron-Jobs                
                 this.cronJob.start();
+                this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
+
                 setInterval(() => {
                     this.logger.info(`updating LiveQuotes...`);
                     if (this.liveQuotes && this.dbConnector) {
@@ -139,8 +145,10 @@ export class MarketDataClient extends AsciiSession {
                         });
                     }
                 }, 200);
+                this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             })
         } catch (error) {
+            this.eventLog.error(error);
             this.logger.error(error);
         }
 
@@ -158,6 +166,7 @@ export class MarketDataClient extends AsciiSession {
 
     // onLogon Event Listener
     protected onLogon(view: MsgView, user: string, password: string): boolean {
+        this.eventLog.info('Logged on!');
         this.logger.info(`peer logs in user ${user}`)
         return true
     }
@@ -168,6 +177,7 @@ export class MarketDataClient extends AsciiSession {
     }
 
     protected insertAvgSpreadsTick(): void {
+        this.eventLog.info(`inserting AVGSpreads...`)
         this.logger.info(`inserting AVGSpreads...`)
         if (this.liveQuotes && this.dbConnector) this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
     }

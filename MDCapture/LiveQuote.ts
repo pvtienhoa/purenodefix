@@ -1,3 +1,5 @@
+import { Common } from "./common";
+
 export interface ILiveQuote {
     timeStamp: Date;
     symbol: string;
@@ -107,7 +109,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      */
     private spreadCalc() {
         if (this._ask && this._bid && this._fpoint)
-            this._spread = (this._ask - this._bid) * Math.pow(10, this._fpoint)
+            this._spread = Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint-1),1);
         else {
             this._spread = 0;
             throw new Error('Error on spreadCalc');

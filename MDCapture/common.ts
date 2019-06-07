@@ -31,9 +31,17 @@ export class Common {
         else return moment().utc().format("YYYYMMDDhhmmssSSS");
     }
 
-    public static roundToFixed(num: number, fpoint: number = 5) : number {
-        let r = Math.round(+(num + "e+" + fpoint))
-        return +(r + "e-" + fpoint);
+    public static roundToFixed(num: number, scale: number = 5) : number {
+        if(!("" + num).includes("e")) {
+            return +(Math.round(+(num + "e+" + scale))  + "e-" + scale);
+          } else {
+            var arr = ("" + num).split("e");
+            var sig = ""
+            if(+arr[1] + scale > 0) {
+              sig = "+";
+            }
+            return +(Math.round(+(+arr[0] + "e" + sig + (+arr[1] + scale))) + "e-" + scale);
+          }
     }
 
     public static loadAppConfig(path: string): IAppConfig {

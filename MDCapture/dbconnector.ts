@@ -95,6 +95,7 @@ export class DBConnector {
         try {
             if (this.pool.idleConnections() <= 1) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
+                return;
             }
             var lqParams: any[] = [];
             lqs.forEach(lq => {
@@ -135,6 +136,7 @@ export class DBConnector {
         try {
             if (!this.pool.idleConnections()) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
+                return;
             }
             var aqParams: any[] = [];
             avgSpreads.forEach(avg => {
