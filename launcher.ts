@@ -42,12 +42,12 @@ export abstract class Launcher {
             try {
                 var client = await this.getInitiator(clientConfig)
                 failedAttemp = 0;
-                this.logger.warning(`Connection Stopped, try reconnecting after 3 sec...`);
+                this.logger.warning(`Connection Stopped, try reconnecting after 10 sec...`);
             } catch (error) {
-                this.logger.warning(`Connect error, try reconnecting after 3 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
+                this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
                 failedAttemp++;
             } finally {
-                Common.delay(3000);
+                Common.delay(10000);
             }
         }
         return client;
