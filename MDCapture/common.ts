@@ -15,6 +15,8 @@ export interface IAppConfig {
     FPassword: string
     FMsgType: string
     FBrokerName: string
+    FNoMsgResetTimeout: number
+    FMaxFailAttempNo: number
     DBHost: string
     DBDatabase: string
     DBUserName: string
@@ -71,5 +73,16 @@ export class Common {
               "TargetSubID": appConfig.FTargetSubID,
               "BeginString": appConfig.FMsgType
         }
+    }
+
+    public static delay (p: number): Promise<any> {
+      return new Promise<any>((accept) => {
+        if (!p) {
+          accept()
+        }
+        setTimeout(() => {
+          accept()
+        }, p)
+      })
     }
 }

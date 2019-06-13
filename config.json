@@ -8,6 +8,8 @@
     "FPassword" : "5020",
     "FMsgType"  : "FIX.4.4",
     "FBrokerName": "nBroker",
+    "FNoMsgResetTimeout": 5,
+    "FMaxFailAttempNo": 10,
     "DBHost"    : "localhost",
     "DBPort"    : "3306",
     "DBDatabase": "nodefix",
@@ -16,5 +18,5 @@
     "DBSocketPath": "/var/run/mysqld/mysqld.sock",
     "TblSymbols" : "Symbols",
     "TblLiveQuotes": "LiveQuotesLD",
-    "TblAverageSpreads": "AverageSpreads"  
+    "TblAverageSpreads": "AverageSpreads"
 }

@@ -4,7 +4,10 @@ import {
     IJsFixConfig,
     IJsFixLogger,
     Dictionary,
-    MsgType
+    MsgType,
+    SessionState,
+    FixSessionState,
+    MsgTransport
 } from 'jspurefix'
 import * as cron from 'node-cron'
 import {
@@ -18,32 +21,44 @@ import { IAppConfig } from './common';
 import { EventEmitter } from 'events';
 import { LiveQuote } from './LiveQuote'
 import { SubscriptionRequestType } from 'jspurefix/dist/types/FIX4.4/repo';
+import * as moment from 'moment'
 
 
 export class MarketDataClient extends AsciiSession {
     private readonly logger: IJsFixLogger
     private readonly fixLog: IJsFixLogger
     private readonly eventLog: IJsFixLogger
-    private avgSpreads: Dictionary<AvgSpread>
     private liveQuotes: Dictionary<LiveQuote>
     private dbConnector: DBConnector
-    private cronJob: any
+    private InsertAvgSpreadCronJob: cron.ScheduledTask
+    private dailyReconnectCronJob: cron.ScheduledTask
     private msgCount: number
+    private isIdling: boolean
+    private idleDuration: moment.Duration
+    private tmpTrans: MsgTransport
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config);
         this.logReceivedMsgs = true;
-        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.msgLog`,5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.eventlog`,100 * 1024 * 1024);
+        this.fixLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.msgLog`, 5 * 1024 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`jsfix.${config!.description!.application!.name}.eventlog`, 100 * 1024 * 1024);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
-        this.avgSpreads = new Dictionary<AvgSpread>();
         this.liveQuotes = new Dictionary<LiveQuote>();
         this.msgCount = 0;
-
-        this.cronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
+        this.isIdling = false;
+        this.idleDuration = moment.duration();
+        this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`)
             if (this.liveQuotes && this.dbConnector) this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
         }, { scheduled: false });
+        this.dailyReconnectCronJob = cron.schedule(`0 2 * * *`, () => {
+            this.logger.info(`Daily disconnected`);
+            this.eventLog.info(`Daily disconnected`);
+            this.done()
+        }, { 
+            scheduled: false,
+            timezone: "Etc/UTC"
+         });
     }
 
     // onApp Event Listener
@@ -57,20 +72,7 @@ export class MarketDataClient extends AsciiSession {
                 let lqToUpdate = this.liveQuotes.get(lq.symbol);
                 lqToUpdate.update(lq);
                 this.liveQuotes.addUpdate(lq.symbol, lqToUpdate);
-                // this.logger.info(`Symbol = ${lq.Symbol}\n
-                // Ask = ${lq.Ask} \n
-                // Bid = ${lq.Bid}\n
-                // Spread = ${lq.Spread}\n
-                // TimeStamp = ${lq.TimeStamp}\n
-                // fpoint = ${lq.fpoint}`)
-                //this.dbConnector.updateLiveQuotes(lq)
-                // let a = this.avgSpreads.get(lq.Symbol)
-                // if (a) a.addSum(lq.Spread)
-                // else {
-                //     a = new AvgSpread(this.appConfig.FBrokerName, lq.Symbol)
-                //     a.addSum(lq.Spread)
-                // }
-                // this.avgSpreads.addUpdate(a.symbol, a)
+                if (this.isIdling) this.isIdling = false;
                 break
             }
             case MsgType.SecurityList: {
@@ -86,7 +88,11 @@ export class MarketDataClient extends AsciiSession {
     protected onStopped(): void {
         this.eventLog.info('Client stopped!');
         this.logger.info('Stopped!');
-        this.cronJob.stop();
+        this.InsertAvgSpreadCronJob.stop();
+        
+        
+        this.InsertAvgSpreadCronJob.destroy();
+        this.dailyReconnectCronJob.destroy();
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -101,7 +107,9 @@ export class MarketDataClient extends AsciiSession {
 
     // onReady Event Listener
     protected onReady(view: MsgView): void {
+        this.eventLog.info('Logged on!');
         this.logger.info('ready')
+        this.tmpTrans = this.transport;
 
         // Send Test msg to Server
         // this.logger.info('send test message...')
@@ -132,16 +140,27 @@ export class MarketDataClient extends AsciiSession {
                 this.send(MsgType.MarketDataRequest, mdr)
 
                 //Start Cron-Jobs                
-                this.cronJob.start();
+                this.InsertAvgSpreadCronJob.start();
                 this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
+                this.dailyReconnectCronJob.start();
+                this.eventLog.info(`Cronjob for daily Reconnect Started!`);
 
                 setInterval(() => {
-                    this.logger.info(`updating LiveQuotes...`);
-                    if (this.liveQuotes && this.dbConnector) {
+                    if (this.isIdling) this.idleDuration.add(200, 'ms')
+                    else this.idleDuration = moment.duration();
+                    this.isIdling = true;
+                    if (this.idleDuration.asMinutes() >= this.appConfig.FNoMsgResetTimeout) {
+                        this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.done();
+                    }
+
+                    if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
+                        this.logger.info(`updating LiveQuotes...`);
                         this.dbConnector.updateLiveQuotes(this.liveQuotes.values());
                         this.liveQuotes.values().forEach(lq => {
                             lq.lqFlag = false;
-                            this.liveQuotes.addUpdate(lq.symbol,lq);
+                            this.liveQuotes.addUpdate(lq.symbol, lq);
                         });
                     }
                 }, 200);
@@ -166,19 +185,19 @@ export class MarketDataClient extends AsciiSession {
 
     // onLogon Event Listener
     protected onLogon(view: MsgView, user: string, password: string): boolean {
-        this.eventLog.info('Logged on!');
+        this.eventLog.info('Tring to Log on!');
         this.logger.info(`peer logs in user ${user}`)
         return true
     }
 
-    protected updateLiveQuotesTick(liveQuotes: Dictionary<LiveQuote>, dbConnector: DBConnector): void {
+    protected updateLiveQuotesTick(self: MarketDataClient): void {
         console.log(`updating LiveQuotes...`);
-        if (liveQuotes && dbConnector) dbConnector.updateLiveQuotes(liveQuotes.values());
+        if (self.liveQuotes && self.dbConnector) self.dbConnector.updateLiveQuotes(self.liveQuotes.values());
     }
 
-    protected insertAvgSpreadsTick(): void {
-        this.eventLog.info(`inserting AVGSpreads...`)
-        this.logger.info(`inserting AVGSpreads...`)
-        if (this.liveQuotes && this.dbConnector) this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
+    protected insertAvgSpreadsTick(self: MarketDataClient): void {
+        self.eventLog.info(`inserting AVGSpreads...`)
+        self.logger.info(`inserting AVGSpreads...`)
+        if (self.liveQuotes && self.dbConnector) self.dbConnector.insertAvgSpreads(self.liveQuotes.values());
     }
 }
