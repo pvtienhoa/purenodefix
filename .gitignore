@@ -63,7 +63,7 @@ typings/
 .next
 
 # compiled javascript
-dist/
+#dist/
 
 data/fix_repo
 

@@ -47,7 +47,7 @@ export abstract class Launcher {
                 this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
                 failedAttemp++;
             } finally {
-                Common.delay(10000);
+                await Common.delay(10000);
             }
         }
         return client;
