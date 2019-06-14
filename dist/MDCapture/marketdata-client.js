@@ -20,7 +20,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         this.liveQuotes = new jspurefix_1.Dictionary();
         this.msgCount = 0;
         this.isIdling = false;
-        this.idleDuration = moment.duration();
+        this.idleDuration = moment.duration(0);
         this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`);
             if (this.liveQuotes && this.dbConnector)
@@ -92,11 +92,12 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                     if (this.isIdling)
                         this.idleDuration.add(200, 'ms');
                     else
-                        this.idleDuration = moment.duration();
+                        this.idleDuration = moment.duration(0);
                     this.isIdling = true;
                     if (this.idleDuration.asMinutes() >= this.appConfig.FNoMsgResetTimeout) {
                         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
                         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.idleDuration = moment.duration(0);
                         this.done();
                     }
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
