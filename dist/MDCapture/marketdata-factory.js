@@ -3,26 +3,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
 const jspurefix_1 = require("jspurefix");
 class MarketDataFactory {
-    static createMarketDataRequest(requestId, msgType = repo_1.SubscriptionRequestType.SnapshotAndUpdates, symbols) {
-        let instruments = symbols.map(s => {
-            let i = { Symbol: s };
-            let g = { Instrument: i };
-            return g;
-        });
+    static createMarketDataRequest(requestId, msgType = repo_1.SubscriptionRequestType.SnapshotAndUpdates, symbol, updateType = null) {
+        let instruments = {
+            Instrument: {
+                Symbol: symbol
+            }
+        };
         return {
             SubscriptionRequestType: msgType,
             MDReqID: requestId,
             MarketDepth: 0,
-            MDUpdateType: repo_1.MDUpdateType.IncrementalRefresh,
-            InstrmtMDReqGrp: instruments,
-            MDReqGrp: [
-                {
-                    MDEntryType: repo_1.MDEntryType.Bid
-                },
-                {
-                    MDEntryType: repo_1.MDEntryType.Offer
-                }
-            ]
+            InstrmtMDReqGrp: [instruments],
         };
     }
     static createSecurityListRequest(requestId, msgType = repo_1.SecurityListRequestType.Symbol) {
@@ -36,7 +27,12 @@ class MarketDataFactory {
             TestReqID: requestId
         };
     }
-    static parseLiveQuote(msgType, msgView) {
+    static createMassQuoteAcknowledgement(quoteId) {
+        return {
+            QuoteID: quoteId
+        };
+    }
+    static parseLiveQuotes(msgType, msgView) {
         try {
             switch (msgType) {
                 case jspurefix_1.MsgType.MarketDataSnapshotFullRefresh: {
@@ -49,7 +45,7 @@ class MarketDataFactory {
                         bid: b,
                         ask: a
                     };
-                    return lq;
+                    return [lq];
                 }
                 case jspurefix_1.MsgType.MarketDataIncrementalRefresh: {
                     const md = msgView.toObject();
@@ -61,7 +57,21 @@ class MarketDataFactory {
                         bid: b,
                         ask: a
                     };
-                    return lq;
+                    return [lq];
+                }
+                case jspurefix_1.MsgType.MassQuote: {
+                    const mq = msgView.toObject();
+                    const quoteSets = mq.QuotSetGrp;
+                    const lqs = quoteSets.map(q => {
+                        let lq = {
+                            timeStamp: mq.StandardHeader.SendingTime,
+                            reqID: q.QuoteSetID,
+                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx : -1,
+                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx : -1
+                        };
+                        return lq;
+                    });
+                    return lqs;
                 }
                 default: {
                     return undefined;

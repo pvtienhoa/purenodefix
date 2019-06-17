@@ -7,12 +7,16 @@ import {
     MsgType,
     SessionState,
     FixSessionState,
-    MsgTransport
+    MsgTransport,
+    Tags,
+    MsgTag
 } from 'jspurefix'
 import * as cron from 'node-cron'
 import {
     IMarketDataRequest,
-    ISecurityListRequest
+    ISecurityListRequest,
+    IMassQuoteAcknowledgement,
+    MDUpdateType
 } from 'jspurefix/dist/types/FIX4.4/repo'
 import { MarketDataFactory } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread';
@@ -55,23 +59,34 @@ export class MarketDataClient extends AsciiSession {
             this.logger.info(`Daily disconnected`);
             this.eventLog.info(`Daily disconnected`);
             this.done()
-        }, { 
-            scheduled: false,
-            timezone: "Etc/UTC"
-         });
+        }, {
+                scheduled: false,
+                timezone: "Etc/UTC"
+            });
     }
 
     // onApp Event Listener
     protected onApplicationMsg(msgType: string, view: MsgView): void {
         //this.logger.debug(`${view.toJson()}`)
         switch (msgType) {
+            case MsgType.MassQuote:
+                let mqa: IMassQuoteAcknowledgement
+                let quoteID = view.getString(MsgTag.QuoteID);
+                if (quoteID) mqa = MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
+                this.send(MsgType.MassQuoteAcknowledgement, mqa);
             case MsgType.MarketDataSnapshotFullRefresh:
             case MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++
-                let lq = MarketDataFactory.parseLiveQuote(msgType, view);
-                let lqToUpdate = this.liveQuotes.get(lq.symbol);
-                lqToUpdate.update(lq);
-                this.liveQuotes.addUpdate(lq.symbol, lqToUpdate);
+                let lqs = MarketDataFactory.parseLiveQuotes(msgType, view);
+                if (!lqs.length) throw new Error('no LiveQuotes from Parsed!');
+
+                lqs.forEach(e => {
+                    let lqToUpdate: LiveQuote
+                    if (e.symbol) lqToUpdate = this.liveQuotes.get(e.symbol)
+                    else lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID)
+                    lqToUpdate.update(e);
+                    this.liveQuotes.addUpdate(lqToUpdate.symbol, lqToUpdate);
+                });
                 if (this.isIdling) this.isIdling = false;
                 break
             }
@@ -89,8 +104,8 @@ export class MarketDataClient extends AsciiSession {
         this.eventLog.info('Client stopped!');
         this.logger.info('Stopped!');
         this.InsertAvgSpreadCronJob.stop();
-        
-        
+
+
         this.InsertAvgSpreadCronJob.destroy();
         this.dailyReconnectCronJob.destroy();
     }
@@ -124,20 +139,18 @@ export class MarketDataClient extends AsciiSession {
         try {
             this.dbConnector.querySymbols().then(symbols => {
                 this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`)
-                var symbolList: string[] = []
                 // Query data from Symbols table and create LiveQuote Dictionary
                 symbols.forEach(r => {
-                    let l = new LiveQuote(r.currencypairname, this.appConfig.FBrokerName, 0, 0, r.Digit);
+                    let l = new LiveQuote(r.currencypairname, r.requestId, this.appConfig.FBrokerName, 0, 0, r.Digit);
                     this.liveQuotes.addUpdate(r.currencypairname, l);
-                    symbolList.push(r.currencypairname);
+
+                    // Create Martket Data Request with symbolist
+                    let mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(l.reqID, SubscriptionRequestType.SnapshotAndUpdates, l.symbol, MDUpdateType.IncrementalRefresh);
+
+                    // Send MD Request to server
+                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
+                    this.send(MsgType.MarketDataRequest, mdr)
                 });
-
-                // Create Martket Data Request with symbolist
-                const mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(this.appConfig.FBrokerName, SubscriptionRequestType.SnapshotAndUpdates, symbolList);
-
-                // Send MD Request to server
-                this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
-                this.send(MsgType.MarketDataRequest, mdr)
 
                 //Start Cron-Jobs                
                 this.InsertAvgSpreadCronJob.start();
@@ -157,8 +170,14 @@ export class MarketDataClient extends AsciiSession {
                     }
 
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
-                        this.logger.info(`updating LiveQuotes...`);
-                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values());
+
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values())
+                            .then((res) => {
+                                if (res) this.logger.info(`LiveQuotes Updated`);
+                            })
+                            .catch((err) => {
+                                throw err;
+                            });
                         this.liveQuotes.values().forEach(lq => {
                             lq.lqFlag = false;
                             this.liveQuotes.addUpdate(lq.symbol, lq);

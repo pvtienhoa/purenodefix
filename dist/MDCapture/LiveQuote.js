@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("./common");
 class LiveQuote {
-    constructor(_symbol, _brokerName, _bid, _ask, _fpoint = 5, _timeStamp = null, _spread = 0, _sumSpread = 0, _avgSpread = 0, _spreadCount = 0, _lqFlag = false, _avgFlag = false) {
+    constructor(_symbol, _reqID, _brokerName, _bid, _ask, _fpoint = 5, _timeStamp = null, _spread = 0, _sumSpread = 0, _avgSpread = 0, _spreadCount = 0, _lqFlag = false, _avgFlag = false) {
         this._symbol = _symbol;
+        this._reqID = _reqID;
         this._brokerName = _brokerName;
         this._bid = _bid;
         this._ask = _ask;
@@ -16,6 +17,8 @@ class LiveQuote {
         this._lqFlag = _lqFlag;
         this._avgFlag = _avgFlag;
     }
+    get reqID() { return this._reqID; }
+    set reqID(v) { this._reqID = v; }
     get timeStamp() { return this._timeStamp; }
     set timeStamp(v) { this._timeStamp = v; }
     get symbol() { return this._symbol; }
@@ -66,10 +69,10 @@ class LiveQuote {
     update(liveQuote) {
         if (!this._lqFlag)
             this._lqFlag = true;
-        if (liveQuote.symbol == this._symbol && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
+        if ((liveQuote.symbol == this._symbol || liveQuote.reqID == this._reqID) && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
             this._timeStamp = liveQuote.timeStamp;
-            this._bid = liveQuote.bid;
-            this._ask = liveQuote.ask;
+            this._bid = liveQuote.bid === -1 ? this._bid : liveQuote.bid;
+            this._ask = liveQuote.ask === -1 ? this._ask : liveQuote.ask;
             this.spreadCalc();
             this.addSum();
             return true;

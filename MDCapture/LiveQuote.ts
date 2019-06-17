@@ -2,7 +2,8 @@ import { Common } from "./common";
 
 export interface ILiveQuote {
     timeStamp: Date;
-    symbol: string;
+    symbol?: string;
+    reqID?: string;
     bid: number;
     ask: number;
     spread?: number;
@@ -11,7 +12,7 @@ export interface ILiveQuote {
 
 export interface IAverageSpread {
     symbol: string;
-    avgSpread:number;
+    avgSpread: number;
     avgFlag: boolean;
 
     reset(): void;
@@ -25,6 +26,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      */
     constructor(
         private _symbol: string,
+        private _reqID: string,
         private _brokerName: string,
         private _bid: number,
         private _ask: number,
@@ -38,6 +40,11 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
         private _avgFlag: boolean = false) {
 
     }
+
+
+
+    public get reqID(): string { return this._reqID; }
+    public set reqID(v: string) { this._reqID = v; }
 
     public get timeStamp(): Date { return this._timeStamp; }
     public set timeStamp(v: Date) { this._timeStamp = v; }
@@ -93,7 +100,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      *  - add spread to sum
      */
     private addSum() {
-        if(!this._avgFlag) this._avgFlag = true;
+        if (!this._avgFlag) this._avgFlag = true;
         this._sumSpread += this._spread;
         this._spreadCount++;
     }
@@ -109,7 +116,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      */
     private spreadCalc() {
         if (this._ask && this._bid && this._fpoint)
-            this._spread = Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint-1),1);
+            this._spread = Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint - 1), 1);
         else {
             this._spread = 0;
             throw new Error('Error on spreadCalc');
@@ -120,11 +127,11 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      * update
      */
     public update(liveQuote: ILiveQuote): boolean {
-        if(!this._lqFlag) this._lqFlag = true;
-        if (liveQuote.symbol == this._symbol && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
+        if (!this._lqFlag) this._lqFlag = true;
+        if ((liveQuote.symbol == this._symbol || liveQuote.reqID == this._reqID) && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
             this._timeStamp = liveQuote.timeStamp;
-            this._bid = liveQuote.bid;
-            this._ask = liveQuote.ask;
+            this._bid = liveQuote.bid === -1 ? this._bid : liveQuote.bid;
+            this._ask = liveQuote.ask=== -1 ? this._ask : liveQuote.ask;
             this.spreadCalc();
             this.addSum();
             return true;

@@ -4,6 +4,7 @@ import { IAppConfig, Common } from './common'
 import { ILiveQuotes } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread'
 import { ILiveQuote, IAverageSpread } from './LiveQuote';
+import { promises } from 'fs';
 
 export class DBConnector {
     private readonly options: IAppConfig
@@ -66,33 +67,8 @@ export class DBConnector {
         };
     }
 
-    // public async updateLiveQuotes(lq: ILiveQuotes) {
-    //     try {
-    //         //common.showNotify('Trying to update Live Quotes');
-    //         //console.log(msgObj);
-    //         const conn = await this.pool.getConnection();
-    //         await conn.query(`
-    //     UPDATE ${this.options.TblLiveQuotes} SET 
-    //         TimeStamp = ?, 
-    //         BrokerName = ?, 
-    //         Bid = ?, 
-    //         Ask = ?, 
-    //         Spread = ?  
-    //     WHERE Symbol = ?;`,
-    //             [(lq.TimeStamp) ? Common.getTimeStamp(lq.TimeStamp) : 'TimeStamp',
-    //             lq.BrokerName,
-    //             (lq.Bid) ? lq.Bid : 'Bid',
-    //             (lq.Ask) ? lq.Ask : 'Ask',
-    //             lq.Spread,
-    //             lq.Symbol]);
-    //         conn.end();
-    //     } catch (err) {
-    //         this.logger.error(err);
-    //     }
-    // }
-
     public async updateLiveQuotes(lqs: ILiveQuote[]) {
-        try {
+        return new Promise<boolean>((accept, reject) => {
             if (this.pool.idleConnections() <= 1) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
                 return;
@@ -104,34 +80,23 @@ export class DBConnector {
                 }
             })
             if (lqParams.length > 0) {
-                await this.pool.batch(`
+                this.pool.batch(`
                 UPDATE ${this.options.TblLiveQuotes} SET 
                     TimeStamp = ?, 
                     BrokerName = ?, 
                     Bid = ?, 
                     Ask = ?, 
                     Spread = ?  
-                WHERE Symbol = ?;`, lqParams);
+                WHERE Symbol = ?;`, lqParams).then(
+                    accept(true)
+                ).catch((err: Error) => {
+                    this.logger.error(new Error('error updating LQ into DB - ' + err.message))
+                    reject(err);
+                });
             }
-        } catch (error) {
-            this.logger.error(new Error('error updating LQ into DB - ' + error.toString()))
-        }
+            else accept(false);
+        })
     }
-
-    // async insertAvg(spreadAvg: AvgSpread[]) {
-    //     try {
-    //         //this.logger.info('Trying to insert average Quotes');
-    //         const conn = await this.pool.getConnection();
-    //         spreadAvg.forEach(avg => {
-    //             avg.calculate();
-    //             conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
-    //             avg.reset();
-    //         });
-    //         conn.end();
-    //     } catch (err) {
-    //         this.logger.error(new Error("not connected due to error: " + err));
-    //     }
-    // }
     async insertAvgSpreads(avgSpreads: IAverageSpread[]) {
         try {
             if (!this.pool.idleConnections()) {

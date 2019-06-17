@@ -2,10 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const jspurefix_1 = require("jspurefix");
 const cron = require("node-cron");
+const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
 const marketdata_factory_1 = require("./marketdata-factory");
 const dbconnector_1 = require("./dbconnector");
 const LiveQuote_1 = require("./LiveQuote");
-const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
+const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
 const moment = require("moment");
 class MarketDataClient extends jspurefix_1.AsciiSession {
     constructor(config, appConfig) {
@@ -37,13 +38,27 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
     }
     onApplicationMsg(msgType, view) {
         switch (msgType) {
+            case jspurefix_1.MsgType.MassQuote:
+                let mqa;
+                let quoteID = view.getString(jspurefix_1.MsgTag.QuoteID);
+                if (quoteID)
+                    mqa = marketdata_factory_1.MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
+                this.send(jspurefix_1.MsgType.MassQuoteAcknowledgement, mqa);
             case jspurefix_1.MsgType.MarketDataSnapshotFullRefresh:
             case jspurefix_1.MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++;
-                let lq = marketdata_factory_1.MarketDataFactory.parseLiveQuote(msgType, view);
-                let lqToUpdate = this.liveQuotes.get(lq.symbol);
-                lqToUpdate.update(lq);
-                this.liveQuotes.addUpdate(lq.symbol, lqToUpdate);
+                let lqs = marketdata_factory_1.MarketDataFactory.parseLiveQuotes(msgType, view);
+                if (!lqs.length)
+                    throw new Error('no LiveQuotes from Parsed!');
+                lqs.forEach(e => {
+                    let lqToUpdate;
+                    if (e.symbol)
+                        lqToUpdate = this.liveQuotes.get(e.symbol);
+                    else
+                        lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID);
+                    lqToUpdate.update(e);
+                    this.liveQuotes.addUpdate(lqToUpdate.symbol, lqToUpdate);
+                });
                 if (this.isIdling)
                     this.isIdling = false;
                 break;
@@ -75,15 +90,13 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         try {
             this.dbConnector.querySymbols().then(symbols => {
                 this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`);
-                var symbolList = [];
                 symbols.forEach(r => {
-                    let l = new LiveQuote_1.LiveQuote(r.currencypairname, this.appConfig.FBrokerName, 0, 0, r.Digit);
+                    let l = new LiveQuote_1.LiveQuote(r.currencypairname, r.requestId, this.appConfig.FBrokerName, 0, 0, r.Digit);
                     this.liveQuotes.addUpdate(r.currencypairname, l);
-                    symbolList.push(r.currencypairname);
+                    let mdr = marketdata_factory_1.MarketDataFactory.createMarketDataRequest(l.reqID, repo_2.SubscriptionRequestType.SnapshotAndUpdates, l.symbol, repo_1.MDUpdateType.IncrementalRefresh);
+                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
+                    this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
                 });
-                const mdr = marketdata_factory_1.MarketDataFactory.createMarketDataRequest(this.appConfig.FBrokerName, repo_1.SubscriptionRequestType.SnapshotAndUpdates, symbolList);
-                this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
-                this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
                 this.InsertAvgSpreadCronJob.start();
                 this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
                 this.dailyReconnectCronJob.start();
@@ -101,8 +114,14 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                         this.done();
                     }
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
-                        this.logger.info(`updating LiveQuotes...`);
-                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values());
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values())
+                            .then((res) => {
+                            if (res)
+                                this.logger.info(`LiveQuotes Updated`);
+                        })
+                            .catch((err) => {
+                            throw err;
+                        });
                         this.liveQuotes.values().forEach(lq => {
                             lq.lqFlag = false;
                             this.liveQuotes.addUpdate(lq.symbol, lq);

@@ -72,7 +72,7 @@ class DBConnector {
     }
     updateLiveQuotes(lqs) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
+            return new Promise((accept, reject) => {
                 if (this.pool.idleConnections() <= 1) {
                     this.logger.warning('No idle Connection... Skipped writing to DB!');
                     return;
@@ -84,19 +84,21 @@ class DBConnector {
                     }
                 });
                 if (lqParams.length > 0) {
-                    yield this.pool.batch(`
+                    this.pool.batch(`
                 UPDATE ${this.options.TblLiveQuotes} SET 
                     TimeStamp = ?, 
                     BrokerName = ?, 
                     Bid = ?, 
                     Ask = ?, 
                     Spread = ?  
-                WHERE Symbol = ?;`, lqParams);
+                WHERE Symbol = ?;`, lqParams).then(accept(true)).catch((err) => {
+                        this.logger.error(new Error('error updating LQ into DB - ' + err.message));
+                        reject(err);
+                    });
                 }
-            }
-            catch (error) {
-                this.logger.error(new Error('error updating LQ into DB - ' + error.toString()));
-            }
+                else
+                    accept(false);
+            });
         });
     }
     insertAvgSpreads(avgSpreads) {

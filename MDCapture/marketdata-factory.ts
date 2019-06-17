@@ -13,7 +13,9 @@ import {
     IInstrmtMDReqGrp,
     SecurityListRequestType,
     ISecurityListRequest,
-    ITestRequest
+    ITestRequest,
+    IMassQuote,
+    IMassQuoteAcknowledgement
 } from 'jspurefix/dist/types/FIX4.4/repo'
 import { MsgView, MsgType } from 'jspurefix';
 import { lchmod } from 'fs';
@@ -44,26 +46,26 @@ export class MarketDataFactory {
     /**
      * createMarketDataRequest
      */
-    public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbols: string[]): IMarketDataRequest {
-        let instruments = symbols.map(s => {
-            let i: IInstrument = { Symbol: s }
-            let g: IInstrmtMDReqGrp = { Instrument: i }
-            return g
-        })
+    public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbol: string, updateType: number = null): IMarketDataRequest {
+        let instruments: IInstrmtMDReqGrp = {
+            Instrument: {
+                Symbol: symbol
+            }
+        }
         return {
             SubscriptionRequestType: msgType,
             MDReqID: requestId,
             MarketDepth: 0,
-            MDUpdateType: MDUpdateType.IncrementalRefresh,
-            InstrmtMDReqGrp: instruments,
-            MDReqGrp: [
-                {
-                    MDEntryType: MDEntryType.Bid
-                },
-                {
-                    MDEntryType: MDEntryType.Offer
-                }
-            ]
+            //MDUpdateType: updateType,
+            InstrmtMDReqGrp: [instruments],
+            // MDReqGrp: [
+            //     {
+            //         MDEntryType: MDEntryType.Bid
+            //     },
+            //     {
+            //         MDEntryType: MDEntryType.Offer
+            //     }
+            // ]
         } as IMarketDataRequest;
     }
 
@@ -80,10 +82,16 @@ export class MarketDataFactory {
         } as ITestRequest
     }
 
+    public static createMassQuoteAcknowledgement(quoteId: string): IMassQuoteAcknowledgement {
+        return {
+            QuoteID: quoteId
+        } as IMassQuoteAcknowledgement 
+    }
+
     /**
      * parseLiveQuote
      */
-    public static parseLiveQuote(msgType: string, msgView: MsgView): ILiveQuote {
+    public static parseLiveQuotes(msgType: string, msgView: MsgView): ILiveQuote[] {
         try {
             switch (msgType) {
                 case MsgType.MarketDataSnapshotFullRefresh: {
@@ -99,7 +107,7 @@ export class MarketDataFactory {
                         ask: a
                     }
 
-                    return lq
+                    return [lq]
                 }
 
                 case MsgType.MarketDataIncrementalRefresh: {
@@ -108,13 +116,26 @@ export class MarketDataFactory {
                     const a = (md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Offer)) ? md.MDIncGrp.find(g => g.MDEntryType === MDEntryType.Offer).MDEntryPx : 0
 
                     let lq: ILiveQuote = {
-
                         timeStamp: md.StandardHeader.SendingTime,
                         symbol: md.MDIncGrp[0].Instrument.Symbol,
                         bid: b,
                         ask: a
                     }
-                    return lq
+                    return [lq]
+                }
+                case MsgType.MassQuote: {
+                    const mq: IMassQuote = msgView.toObject();
+                    const quoteSets = mq.QuotSetGrp;
+                    const lqs: ILiveQuote[] = quoteSets.map(q => {
+                        let lq: ILiveQuote = {
+                            timeStamp: mq.StandardHeader.SendingTime,
+                            reqID: q.QuoteSetID,
+                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx : -1,
+                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx : -1
+                        }
+                        return lq;
+                    });
+                    return lqs;
                 }
                 default: {
                     return undefined;
