@@ -18,5 +18,6 @@
     "DBSocketPath": "/var/run/mysqld/mysqld.sock",
     "TblSymbols" : "Symbols",
     "TblLiveQuotes": "LiveQuotesLD",
-    "TblAverageSpreads": "AverageSpreads"
+    "TblAverageSpreads": "AverageSpreads",
+    "AvgTerm": 5
 }

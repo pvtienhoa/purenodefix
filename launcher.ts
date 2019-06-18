@@ -13,7 +13,7 @@ export abstract class Launcher {
         const init = path.join(root, appConfig)
         this.logger.info(`init = ${init}`)
         this.appConfig = require(init)
-        this.appConfig.AvgTerm = 5
+        //this.appConfig.AvgTerm = 5
     }
 
     protected abstract getInitiator(fConfig: IJsFixConfig): Promise<any>

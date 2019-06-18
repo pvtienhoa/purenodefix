@@ -138,8 +138,6 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         }
         process.on('SIGINT', function () {
             console.log("Caught interrupt signal");
-            console.log(`Total Mesages Received: ${this.msgCount}`);
-            this.done();
             process.exit();
         });
     }

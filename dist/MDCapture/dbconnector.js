@@ -112,7 +112,7 @@ class DBConnector {
                 avgSpreads.forEach(avg => {
                     if (avg.avgFlag) {
                         avg.avgCalc();
-                        aqParams.push([common_1.Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                        aqParams.push([common_1.Common.getTimeStamp(), this.options.AvgTerm * 60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
                         avg.reset();
                     }
                 });
