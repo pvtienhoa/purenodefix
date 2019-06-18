@@ -11,7 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const jspurefix_1 = require("jspurefix");
 const common_1 = require("./MDCapture/common");
-const logFactory = new jspurefix_1.JsFixWinstonLogFactory(jspurefix_1.WinstonLogger.consoleOptions('debug'));
+const logFactory = new jspurefix_1.JsFixWinstonLogFactory(jspurefix_1.WinstonLogger.consoleOptions('info'));
 class Launcher {
     constructor(appConfig) {
         this.logger = logFactory.logger('launcher');

@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
 const jspurefix_1 = require("jspurefix");
-const common_1 = require("./common");
 class MarketDataFactory {
     static createMarketDataRequest(requestId, msgType = repo_1.SubscriptionRequestType.SnapshotAndUpdates, symbol, updateType = null) {
         let instruments = {
@@ -62,14 +61,13 @@ class MarketDataFactory {
                 }
                 case jspurefix_1.MsgType.MassQuote: {
                     const mq = msgView.toObject();
-                    console.log(common_1.Common.objToString(mq));
                     const quoteSets = mq.QuotSetGrp;
                     const lqs = quoteSets.map(q => {
                         let lq = {
                             timeStamp: mq.StandardHeader.SendingTime,
                             reqID: q.QuoteSetID,
-                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx : -1,
-                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx : -1
+                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate : -1,
+                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate : -1
                         };
                         return lq;
                     });

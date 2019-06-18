@@ -125,14 +125,13 @@ export class MarketDataFactory {
                 }
                 case MsgType.MassQuote: {
                     const mq: IMassQuote = msgView.toObject();
-                    console.log(Common.objToString(mq));
                     const quoteSets = mq.QuotSetGrp;
                     const lqs: ILiveQuote[] = quoteSets.map(q => {
                         let lq: ILiveQuote = {
                             timeStamp: mq.StandardHeader.SendingTime,
                             reqID: q.QuoteSetID,
-                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidPx : -1,
-                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferPx : -1
+                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate : -1,
+                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate : -1
                         }
                         return lq;
                     });
