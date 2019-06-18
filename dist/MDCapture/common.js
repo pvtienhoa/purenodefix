@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const moment = require("moment");
+const util = require("util");
 var SubscriptionRequestType;
 (function (SubscriptionRequestType) {
 })(SubscriptionRequestType = exports.SubscriptionRequestType || (exports.SubscriptionRequestType = {}));
@@ -60,6 +61,9 @@ class Common {
                 accept();
             }, p);
         });
+    }
+    static objToString(obj) {
+        return util.inspect(obj, false, null, true);
     }
 }
 exports.Common = Common;

@@ -1,5 +1,6 @@
 import * as moment from 'moment'
 import * as fs from 'fs'
+import * as util from 'util'
 
 export enum SubscriptionRequestType {
     
@@ -84,5 +85,9 @@ export class Common {
           accept()
         }, p)
       })
+    }
+
+    public static objToString (obj: object): string {
+      return util.inspect(obj, false, null, true /* enable colors */);
     }
 }

@@ -125,6 +125,7 @@ export class MarketDataFactory {
                 }
                 case MsgType.MassQuote: {
                     const mq: IMassQuote = msgView.toObject();
+                    console.log(Common.objToString(mq));
                     const quoteSets = mq.QuotSetGrp;
                     const lqs: ILiveQuote[] = quoteSets.map(q => {
                         let lq: ILiveQuote = {

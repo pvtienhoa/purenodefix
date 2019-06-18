@@ -21,7 +21,7 @@ import {
 import { MarketDataFactory } from './marketdata-factory'
 import { AvgSpread } from './AvgSpread';
 import { DBConnector } from './dbconnector';
-import { IAppConfig } from './common';
+import { IAppConfig, Common } from './common';
 import { EventEmitter } from 'events';
 import { LiveQuote } from './LiveQuote'
 import { SubscriptionRequestType } from 'jspurefix/dist/types/FIX4.4/repo';
@@ -81,9 +81,13 @@ export class MarketDataClient extends AsciiSession {
                 if (!lqs.length) throw new Error('no LiveQuotes from Parsed!');
 
                 lqs.forEach(e => {
+                    this.logger.debug('e:')
+                    this.logger.debug(Common.objToString(e));
                     let lqToUpdate: LiveQuote
                     if (e.symbol) lqToUpdate = this.liveQuotes.get(e.symbol)
                     else lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID)
+                    this.logger.debug('lqToUpdate:')
+                    this.logger.debug(Common.objToString(lqToUpdate));
                     lqToUpdate.update(e);
                     this.liveQuotes.addUpdate(lqToUpdate.symbol, lqToUpdate);
                 });

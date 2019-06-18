@@ -131,7 +131,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
         if ((liveQuote.symbol == this._symbol || liveQuote.reqID == this._reqID) && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
             this._timeStamp = liveQuote.timeStamp;
             this._bid = liveQuote.bid === -1 ? this._bid : liveQuote.bid;
-            this._ask = liveQuote.ask=== -1 ? this._ask : liveQuote.ask;
+            this._ask = liveQuote.ask === -1 ? this._ask : liveQuote.ask;
             this.spreadCalc();
             this.addSum();
             return true;
