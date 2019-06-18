@@ -114,12 +114,14 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
     /**
      * spreadCalc
      */
-    private spreadCalc() {
-        if (this._ask && this._bid && this._fpoint)
+    private spreadCalc(): boolean {
+        if (this._ask && this._bid && this._fpoint) {
             this._spread = Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint - 1), 1);
-        else {
+            return true;
+        } else {
             this._spread = 0;
-            throw new Error('Error on spreadCalc');
+            //throw new Error('Error on spreadCalc');
+            return false;
         }
     }
 
@@ -127,13 +129,14 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      * update
      */
     public update(liveQuote: ILiveQuote): boolean {
-        if (!this._lqFlag) this._lqFlag = true;
         if ((liveQuote.symbol == this._symbol || liveQuote.reqID == this._reqID) && liveQuote.timeStamp && liveQuote.ask && liveQuote.bid) {
             this._timeStamp = liveQuote.timeStamp;
             this._bid = liveQuote.bid === -1 ? this._bid : liveQuote.bid;
             this._ask = liveQuote.ask === -1 ? this._ask : liveQuote.ask;
-            this.spreadCalc();
-            this.addSum();
+            if (this.spreadCalc()) {
+                this.addSum();
+                if (!this._lqFlag) this._lqFlag = true;
+            }
             return true;
         }
         return false;

@@ -5,6 +5,7 @@ const cron = require("node-cron");
 const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
 const marketdata_factory_1 = require("./marketdata-factory");
 const dbconnector_1 = require("./dbconnector");
+const common_1 = require("./common");
 const LiveQuote_1 = require("./LiveQuote");
 const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
 const moment = require("moment");
@@ -51,6 +52,8 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(e => {
+                    this.eventLog.info('e:');
+                    this.eventLog.info(common_1.Common.objToString(e));
                     let lqToUpdate;
                     if (e.symbol)
                         lqToUpdate = this.liveQuotes.get(e.symbol);
