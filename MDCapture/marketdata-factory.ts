@@ -46,7 +46,7 @@ export class MarketDataFactory {
     /**
      * createMarketDataRequest
      */
-    public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbol: string, updateType: number = null): IMarketDataRequest {
+    public static createMarketDataRequest(requestId: string, msgType: SubscriptionRequestType = SubscriptionRequestType.SnapshotAndUpdates, symbol: string, updateType: any = null): IMarketDataRequest {
         let instruments: IInstrmtMDReqGrp = {
             Instrument: {
                 Symbol: symbol
@@ -56,7 +56,7 @@ export class MarketDataFactory {
             SubscriptionRequestType: msgType,
             MDReqID: requestId,
             MarketDepth: 0,
-            //MDUpdateType: updateType,
+            // MDUpdateType: updateType,
             InstrmtMDReqGrp: [instruments],
             // MDReqGrp: [
             //     {

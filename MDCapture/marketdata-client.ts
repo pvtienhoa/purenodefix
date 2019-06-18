@@ -69,17 +69,17 @@ export class MarketDataClient extends AsciiSession {
     protected onApplicationMsg(msgType: string, view: MsgView): void {
         //this.logger.debug(`${view.toJson()}`)
         switch (msgType) {
-            case MsgType.MassQuote:
-                let mqa: IMassQuoteAcknowledgement
-                let quoteID = view.getString(MsgTag.QuoteID);
-                if (quoteID) mqa = MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
-                this.send(MsgType.MassQuoteAcknowledgement, mqa);
+            case MsgType.MassQuote:                
+                var quoteID = view.getString(MsgTag.QuoteID);
+                if (quoteID) {
+                    let mqa: IMassQuoteAcknowledgement = MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
+                    this.send(MsgType.MassQuoteAcknowledgement, mqa);
+                }
             case MsgType.MarketDataSnapshotFullRefresh:
             case MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++
                 let lqs = MarketDataFactory.parseLiveQuotes(msgType, view);
                 if (!lqs.length) throw new Error('no LiveQuotes from Parsed!');
-
                 lqs.forEach(e => {
                     this.eventLog.info('e:');
                     this.eventLog.info(Common.objToString(e));
@@ -173,18 +173,16 @@ export class MarketDataClient extends AsciiSession {
 
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
 
-                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values())
-                            .then((res) => {
-                                if (res) this.logger.info(`LiveQuotes Updated`);
-                            })
-                            .catch((err) => {
-                                throw err;
-                            });
-                        this.liveQuotes.values().forEach(lq => {
-                            lq.lqFlag = false;
-                            this.liveQuotes.addUpdate(lq.symbol, lq);
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
+                            if (res) this.logger.info(`LiveQuotes Updated`);
+                        }).catch((err) => {
+                            throw err;
                         });
                     }
+                    this.liveQuotes.values().forEach(lq => {
+                        lq.lqFlag = false;
+                        this.liveQuotes.addUpdate(lq.symbol, lq);
+                    });
                 }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             })

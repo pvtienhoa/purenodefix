@@ -71,7 +71,7 @@ export class Common {
               "HeartBtInt": 30,
               "SenderCompId": appConfig.FSenderID,
               "TargetCompID": appConfig.FTargetID,
-              "TargetSubID": appConfig.FTargetSubID,
+              // "TargetSubID": appConfig.FTargetSubID,
               "BeginString": appConfig.FMsgType
         }
     }

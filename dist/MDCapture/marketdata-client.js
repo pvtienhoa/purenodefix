@@ -40,11 +40,11 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
     onApplicationMsg(msgType, view) {
         switch (msgType) {
             case jspurefix_1.MsgType.MassQuote:
-                let mqa;
-                let quoteID = view.getString(jspurefix_1.MsgTag.QuoteID);
-                if (quoteID)
-                    mqa = marketdata_factory_1.MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
-                this.send(jspurefix_1.MsgType.MassQuoteAcknowledgement, mqa);
+                var quoteID = view.getString(jspurefix_1.MsgTag.QuoteID);
+                if (quoteID) {
+                    let mqa = marketdata_factory_1.MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
+                    this.send(jspurefix_1.MsgType.MassQuoteAcknowledgement, mqa);
+                }
             case jspurefix_1.MsgType.MarketDataSnapshotFullRefresh:
             case jspurefix_1.MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++;
@@ -117,19 +117,17 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                         this.done();
                     }
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
-                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values())
-                            .then((res) => {
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
                             if (res)
                                 this.logger.info(`LiveQuotes Updated`);
-                        })
-                            .catch((err) => {
+                        }).catch((err) => {
                             throw err;
                         });
-                        this.liveQuotes.values().forEach(lq => {
-                            lq.lqFlag = false;
-                            this.liveQuotes.addUpdate(lq.symbol, lq);
-                        });
                     }
+                    this.liveQuotes.values().forEach(lq => {
+                        lq.lqFlag = false;
+                        this.liveQuotes.addUpdate(lq.symbol, lq);
+                    });
                 }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             });
