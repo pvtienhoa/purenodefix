@@ -5,10 +5,8 @@ const cron = require("node-cron");
 const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
 const marketdata_factory_1 = require("./marketdata-factory");
 const dbconnector_1 = require("./dbconnector");
-const common_1 = require("./common");
 const LiveQuote_1 = require("./LiveQuote");
 const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
-const moment = require("moment");
 class MarketDataClient extends jspurefix_1.AsciiSession {
     constructor(config, appConfig) {
         super(config);
@@ -16,13 +14,13 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         this.appConfig = appConfig;
         this.logReceivedMsgs = true;
         this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 1024 * 1024 * 1024, true);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new dbconnector_1.DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new jspurefix_1.Dictionary();
         this.msgCount = 0;
         this.isIdling = false;
-        this.idleDuration = moment.duration(0);
+        this.idleDuration = 0;
         this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`);
             if (this.liveQuotes && this.dbConnector)
@@ -52,8 +50,6 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(e => {
-                    this.eventLog.info('e:');
-                    this.eventLog.info(common_1.Common.objToString(e));
                     let lqToUpdate;
                     if (e.symbol)
                         lqToUpdate = this.liveQuotes.get(e.symbol);
@@ -106,14 +102,13 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
                 setInterval(() => {
                     if (this.isIdling)
-                        this.idleDuration.add(200, 'ms');
+                        this.idleDuration += 200;
                     else
-                        this.idleDuration = moment.duration(0);
+                        this.idleDuration = 0;
                     this.isIdling = true;
-                    if (this.idleDuration.asMinutes() >= this.appConfig.FNoMsgResetTimeout) {
+                    if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
                         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
                         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                        this.idleDuration = moment.duration(0);
                         this.done();
                     }
                     if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {

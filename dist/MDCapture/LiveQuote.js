@@ -44,6 +44,7 @@ class LiveQuote {
     get avgFlag() { return this._avgFlag; }
     set avgFlag(v) { this._avgFlag = v; }
     reset() {
+        this._sumSpread = 0;
         this._spreadCount = 0;
         this._avgSpread = 0;
         this._avgFlag = false;
@@ -56,7 +57,7 @@ class LiveQuote {
     }
     avgCalc() {
         if (this._spreadCount)
-            this._avgSpread = this.sumSpread / this._spreadCount;
+            this._avgSpread = this._sumSpread / this._spreadCount;
     }
     spreadCalc() {
         if (this._ask && this._bid && this._fpoint) {
