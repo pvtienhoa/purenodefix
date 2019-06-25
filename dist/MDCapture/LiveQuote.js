@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const common_1 = require("./common");
 class LiveQuote {
     constructor(_symbol, _reqID, _brokerName, _bid, _ask, _fpoint = 5, _timeStamp = null, _spread = 0, _sumSpread = 0, _avgSpread = 0, _spreadCount = 0, _lqFlag = false, _avgFlag = false) {
         this._symbol = _symbol;
@@ -46,7 +45,6 @@ class LiveQuote {
     reset() {
         this._sumSpread = 0;
         this._spreadCount = 0;
-        this._avgSpread = 0;
         this._avgFlag = false;
     }
     addSum() {
@@ -56,12 +54,14 @@ class LiveQuote {
         this._spreadCount++;
     }
     avgCalc() {
-        if (this._spreadCount)
+        if (this._spreadCount) {
             this._avgSpread = this._sumSpread / this._spreadCount;
+            this.reset();
+        }
     }
     spreadCalc() {
         if (this._ask && this._bid && this._fpoint) {
-            this._spread = common_1.Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint - 1), 1);
+            this._spread = (this._ask - this._bid) * Math.pow(10, this._fpoint - 1);
             return true;
         }
         else {

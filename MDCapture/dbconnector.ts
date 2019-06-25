@@ -2,7 +2,6 @@ import * as mariadb from 'mariadb'
 import { JsFixWinstonLogFactory, WinstonLogger, IJsFixConfig, IJsFixLogger, SessionMsgFactory, makeConfig, JsFixLoggerFactory, Dictionary } from 'jspurefix'
 import { IAppConfig, Common } from './common'
 import { ILiveQuotes } from './marketdata-factory'
-import { AvgSpread } from './AvgSpread'
 import { ILiveQuote, IAverageSpread } from './LiveQuote';
 import { promises } from 'fs';
 
@@ -48,35 +47,35 @@ export class DBConnector {
     /**
      * queryLastAvgSpread
      */
-    public async queryLastAvgSpreads(): Promise<Dictionary<AvgSpread>> {
-        const conn = await this.pool.getConnection();
-        const rows: any[] = await conn.query(`WITH ranked_rows AS (SELECT r.*, ROW_NUMBER() OVER (PARTITION BY Symbol ORDER BY ID DESC) AS rn FROM AverageSpreads AS r) SELECT * FROM ranked_rows WHERE rn = 1`);
-        conn.end();
-        if (rows) {
-            var ret = new Dictionary<AvgSpread>();
-            rows.forEach(row => {
-                let a = new AvgSpread(row.BrokerName, row.Symbol)
-                a.lastAvg = row.AvgSpread
-                ret.addUpdate(a.symbol, a)
-            })
-            return ret;
-        }
-        else {
-            this.logger.error(new Error('Cannot get Rows!'));
-            return undefined;
-        };
-    }
+    // public async queryLastAvgSpreads(): Promise<Dictionary<AvgSpread>> {
+    //     const conn = await this.pool.getConnection();
+    //     const rows: any[] = await conn.query(`WITH ranked_rows AS (SELECT r.*, ROW_NUMBER() OVER (PARTITION BY Symbol ORDER BY ID DESC) AS rn FROM AverageSpreads AS r) SELECT * FROM ranked_rows WHERE rn = 1`);
+    //     conn.end();
+    //     if (rows) {
+    //         var ret = new Dictionary<AvgSpread>();
+    //         rows.forEach(row => {
+    //             let a = new AvgSpread(row.BrokerName, row.Symbol)
+    //             a.lastAvg = row.AvgSpread
+    //             ret.addUpdate(a.symbol, a)
+    //         })
+    //         return ret;
+    //     }
+    //     else {
+    //         this.logger.error(new Error('Cannot get Rows!'));
+    //         return undefined;
+    //     };
+    // }
 
     public async updateLiveQuotes(lqs: ILiveQuote[]) {
         return new Promise<boolean>((accept, reject) => {
             if (this.pool.idleConnections() <= 1) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
-                return;
+                accept(false);
             }
             var lqParams: any[] = [];
             lqs.forEach(lq => {
                 if (lq.lqFlag) {
-                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, lq.spread, lq.symbol])
+                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, Common.roundToFixed(lq.spread,1), lq.symbol])
                 }
             })
             if (lqParams.length > 0) {
@@ -98,23 +97,28 @@ export class DBConnector {
         })
     }
     async insertAvgSpreads(avgSpreads: IAverageSpread[]) {
-        try {
+        return new Promise<boolean>((accept, reject) => {
             if (!this.pool.idleConnections()) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
-                return;
+                accept(false);
             }
             var aqParams: any[] = [];
             avgSpreads.forEach(avg => {
                 if (avg.avgFlag) {
                     avg.avgCalc();
                     aqParams.push([Common.getTimeStamp(), this.options.AvgTerm*60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
-                    // conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
-                    avg.reset();
+                    //avg.reset();
                 }
             });
-            await this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams);
-        } catch (err) {
-            this.logger.error(new Error("Error insertig AvgSpreads to DB - " + err));
-        }
+            if (aqParams.length > 0) {
+                this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(
+                    accept(true)
+                ).catch((err: Error) => {
+                    this.logger.error(new Error('error updating AQ into DB - ' + err.message))
+                    reject(err);
+                });
+            }
+            else accept(false);
+        })
     }
 }

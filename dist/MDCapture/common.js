@@ -64,6 +64,9 @@ class Common {
     static objToString(obj) {
         return util.inspect(obj, false, null, true);
     }
+    static startInterval(fn, ms) {
+        return setInterval(fn, ms);
+    }
 }
 exports.Common = Common;
 //# sourceMappingURL=common.js.map
