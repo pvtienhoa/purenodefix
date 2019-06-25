@@ -1,62 +1,79 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-const jspurefix_1 = require("jspurefix");
-const cron = require("node-cron");
-const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
-const marketdata_factory_1 = require("./marketdata-factory");
-const dbconnector_1 = require("./dbconnector");
-const LiveQuote_1 = require("./LiveQuote");
-const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
-class MarketDataClient extends jspurefix_1.AsciiSession {
-    constructor(config, appConfig) {
-        super(config);
-        this.config = config;
-        this.appConfig = appConfig;
-        this.logReceivedMsgs = true;
-        this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 1024 * 1024 * 1024, true);
-        this.logger = config.logFactory.logger(`${this.me}:MDClient`);
-        this.dbConnector = new dbconnector_1.DBConnector(this.appConfig, config.logFactory);
-        this.liveQuotes = new jspurefix_1.Dictionary();
-        this.msgCount = 0;
-        this.isIdling = false;
-        this.idleDuration = 0;
-        this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
-            this.logger.info(`inserting AVGSpreads...`);
-            if (this.liveQuotes && this.dbConnector)
-                this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
+var jspurefix_1 = require("jspurefix");
+var cron = require("node-cron");
+var repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
+var marketdata_factory_1 = require("./marketdata-factory");
+var dbconnector_1 = require("./dbconnector");
+var common_1 = require("./common");
+var LiveQuote_1 = require("./LiveQuote");
+var repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
+var MarketDataClient = (function (_super) {
+    __extends(MarketDataClient, _super);
+    function MarketDataClient(config, appConfig) {
+        var _this = _super.call(this, config) || this;
+        _this.config = config;
+        _this.appConfig = appConfig;
+        _this.logReceivedMsgs = true;
+        _this.fixLog = config.logFactory.plain(_this.appConfig.FMsgType + "-" + _this.appConfig.FUserName + "-" + _this.appConfig.FSenderID + "-" + _this.appConfig.FTargetID + ".messages", 5 * 1024 * 1024 * 1024);
+        _this.eventLog = config.logFactory.plain(_this.appConfig.FMsgType + "-" + _this.appConfig.FUserName + "-" + _this.appConfig.FSenderID + "-" + _this.appConfig.FTargetID + ".event", 1024 * 1024 * 1024, true);
+        _this.logger = config.logFactory.logger(_this.me + ":MDClient");
+        _this.dbConnector = new dbconnector_1.DBConnector(_this.appConfig, config.logFactory);
+        _this.liveQuotes = new jspurefix_1.Dictionary();
+        _this.msgCount = 0;
+        _this.isIdling = false;
+        _this.idleDuration = 0;
+        _this.InsertAvgSpreadCronJob = cron.schedule("*/" + appConfig.AvgTerm + " * * * *", function () {
+            _this.logger.info("inserting AVGSpreads...");
+            if (_this.liveQuotes && _this.dbConnector)
+                _this.dbConnector.insertAvgSpreads(_this.liveQuotes.values());
         }, { scheduled: false });
-        this.dailyReconnectCronJob = cron.schedule(`0 2 * * *`, () => {
-            this.logger.info(`Daily disconnected`);
-            this.eventLog.info(`Daily disconnected`);
-            this.done();
+        _this.dailyReconnectCronJob = cron.schedule("0 2 * * *", function () {
+            _this.logger.info("Daily disconnected");
+            _this.eventLog.info("Daily disconnected");
+            _this.done();
         }, {
             scheduled: false,
             timezone: "Etc/UTC"
         });
+        return _this;
     }
-    onApplicationMsg(msgType, view) {
+    MarketDataClient.prototype.onApplicationMsg = function (msgType, view) {
+        var _this = this;
         switch (msgType) {
             case jspurefix_1.MsgType.MassQuote:
                 var quoteID = view.getString(jspurefix_1.MsgTag.QuoteID);
                 if (quoteID) {
-                    let mqa = marketdata_factory_1.MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
+                    var mqa = marketdata_factory_1.MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
                     this.send(jspurefix_1.MsgType.MassQuoteAcknowledgement, mqa);
                 }
             case jspurefix_1.MsgType.MarketDataSnapshotFullRefresh:
             case jspurefix_1.MsgType.MarketDataIncrementalRefresh: {
                 this.msgCount++;
-                let lqs = marketdata_factory_1.MarketDataFactory.parseLiveQuotes(msgType, view);
+                var lqs = marketdata_factory_1.MarketDataFactory.parseLiveQuotes(msgType, view);
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
-                lqs.forEach(e => {
-                    let lqToUpdate;
+                lqs.forEach(function (e) {
+                    var lqToUpdate;
                     if (e.symbol)
-                        lqToUpdate = this.liveQuotes.get(e.symbol);
+                        lqToUpdate = _this.liveQuotes.get(e.symbol);
                     else
-                        lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID);
+                        lqToUpdate = _this.liveQuotes.values().find(function (x) { return x.reqID === e.reqID; });
                     lqToUpdate.update(e);
-                    this.liveQuotes.addUpdate(lqToUpdate.symbol, lqToUpdate);
+                    _this.liveQuotes.addUpdate(lqToUpdate.symbol, lqToUpdate);
                 });
                 if (this.isIdling)
                     this.isIdling = false;
@@ -68,63 +85,41 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             default:
                 break;
         }
-    }
-    onStopped() {
+    };
+    MarketDataClient.prototype.onStopped = function () {
         this.eventLog.info('Client stopped!');
         this.logger.info('Stopped!');
         this.InsertAvgSpreadCronJob.stop();
         this.InsertAvgSpreadCronJob.destroy();
         this.dailyReconnectCronJob.destroy();
-    }
-    onDecoded(msgType, txt) {
+    };
+    MarketDataClient.prototype.onDecoded = function (msgType, txt) {
         this.fixLog.info(txt);
-    }
-    onEncoded(msgType, txt) {
+    };
+    MarketDataClient.prototype.onEncoded = function (msgType, txt) {
         this.fixLog.info(jspurefix_1.AsciiSession.asPiped(txt));
-    }
-    onReady(view) {
+    };
+    MarketDataClient.prototype.onReady = function (view) {
+        var _this = this;
         this.eventLog.info('Logged on!');
         this.logger.info('ready');
         this.tmpTrans = this.transport;
         try {
-            this.dbConnector.querySymbols().then(symbols => {
-                this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`);
-                symbols.forEach(r => {
-                    let l = new LiveQuote_1.LiveQuote(r.currencypairname, r.requestId, this.appConfig.FBrokerName, 0, 0, r.Digit);
-                    this.liveQuotes.addUpdate(r.currencypairname, l);
-                    let mdr = marketdata_factory_1.MarketDataFactory.createMarketDataRequest(l.reqID, repo_2.SubscriptionRequestType.SnapshotAndUpdates, l.symbol, repo_1.MDUpdateType.IncrementalRefresh);
-                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
-                    this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
+            this.dbConnector.querySymbols().then(function (symbols) {
+                _this.eventLog.info("Symbol list accquired, count: " + symbols.length);
+                symbols.forEach(function (r) {
+                    var l = new LiveQuote_1.LiveQuote(r.currencypairname, r.requestId, _this.appConfig.FBrokerName, 0, 0, r.Digit);
+                    _this.liveQuotes.addUpdate(r.currencypairname, l);
+                    var mdr = marketdata_factory_1.MarketDataFactory.createMarketDataRequest(l.reqID, repo_2.SubscriptionRequestType.SnapshotAndUpdates, l.symbol, repo_1.MDUpdateType.IncrementalRefresh);
+                    _this.eventLog.info("Sending MDRequest to host: " + _this.appConfig.FHost + ": " + _this.appConfig.FPort);
+                    _this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
                 });
-                this.InsertAvgSpreadCronJob.start();
-                this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
-                this.dailyReconnectCronJob.start();
-                this.eventLog.info(`Cronjob for daily Reconnect Started!`);
-                setInterval(() => {
-                    if (this.isIdling)
-                        this.idleDuration += 200;
-                    else
-                        this.idleDuration = 0;
-                    this.isIdling = true;
-                    if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-                        this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                        this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                        this.done();
-                    }
-                    if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
-                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
-                            if (res)
-                                this.logger.info(`LiveQuotes Updated`);
-                        }).catch((err) => {
-                            throw err;
-                        });
-                    }
-                    this.liveQuotes.values().forEach(lq => {
-                        lq.lqFlag = false;
-                        this.liveQuotes.addUpdate(lq.symbol, lq);
-                    });
-                }, 200);
-                this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
+                _this.InsertAvgSpreadCronJob.start();
+                _this.eventLog.info("Cronjob for inserting AvgSpreads Started!");
+                _this.dailyReconnectCronJob.start();
+                _this.eventLog.info("Cronjob for daily Reconnect Started!");
+                common_1.Common.startInteval(_this.clientTick, 200);
+                _this.eventLog.info("Interval job for updating LiveQuotes Started!");
             });
         }
         catch (error) {
@@ -135,23 +130,54 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             console.log("Caught interrupt signal");
             process.exit();
         });
-    }
-    onLogon(view, user, password) {
+    };
+    MarketDataClient.prototype.onLogon = function (view, user, password) {
         this.eventLog.info('Tring to Log on!');
-        this.logger.info(`peer logs in user ${user}`);
+        this.logger.info("peer logs in user " + user);
         return true;
-    }
-    updateLiveQuotesTick(self) {
-        console.log(`updating LiveQuotes...`);
-        if (self.liveQuotes && self.dbConnector)
-            self.dbConnector.updateLiveQuotes(self.liveQuotes.values());
-    }
-    insertAvgSpreadsTick(self) {
-        self.eventLog.info(`inserting AVGSpreads...`);
-        self.logger.info(`inserting AVGSpreads...`);
-        if (self.liveQuotes && self.dbConnector)
-            self.dbConnector.insertAvgSpreads(self.liveQuotes.values());
-    }
-}
+    };
+    MarketDataClient.prototype.updateLiveQuotesTick = function (self) {
+        if (self.liveQuotes && self.dbConnector && self.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
+            self.dbConnector.updateLiveQuotes(self.liveQuotes.values()).then(function (res) {
+                if (res)
+                    self.logger.info("LiveQuotes Updated");
+            }).catch(function (err) {
+                throw err;
+            });
+        }
+    };
+    MarketDataClient.prototype.insertAvgSpreadsTick = function (self) {
+        if (self.liveQuotes && self.dbConnector) {
+            self.dbConnector.insertAvgSpreads(self.liveQuotes.values()).then(function (res) {
+                if (res) {
+                    self.eventLog.info("AVGSpreads Inserted");
+                    self.logger.info("AVGSpreads Inserted");
+                }
+            }).catch(function (err) {
+                throw err;
+            });
+        }
+    };
+    MarketDataClient.prototype.stopClient = function () {
+        this.done();
+    };
+    MarketDataClient.prototype.clientTick = function (self) {
+        if (self.isIdling)
+            self.idleDuration += 200;
+        else
+            self.idleDuration = 0;
+        self.isIdling = true;
+        if (self.idleDuration >= self.appConfig.FNoMsgResetTimeout * 60 * 1000) {
+            self.eventLog.info("Client has been idle for " + self.appConfig.FNoMsgResetTimeout + " minutes, Reconnecting");
+            self.logger.info("Client has been idle for " + self.appConfig.FNoMsgResetTimeout + " minutes, Reconnecting");
+            self.done();
+        }
+        self.updateLiveQuotesTick(self);
+        self.liveQuotes.values().forEach(function (lq) {
+            lq.lqFlag = false;
+            self.liveQuotes.addUpdate(lq.symbol, lq);
+        });
+    };
+    return MarketDataClient;
+}(jspurefix_1.AsciiSession));
 exports.MarketDataClient = MarketDataClient;
-//# sourceMappingURL=marketdata-client.js.map

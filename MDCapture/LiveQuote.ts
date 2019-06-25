@@ -14,8 +14,6 @@ export interface IAverageSpread {
     symbol: string;
     avgSpread: number;
     avgFlag: boolean;
-
-    reset(): void;
     avgCalc(): void;
 }
 
@@ -89,10 +87,9 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
     /**
      * reset
      */
-    public reset(): void {
+    private reset(): void {
         this._sumSpread = 0;
         this._spreadCount = 0;
-        this._avgSpread = 0;
         this._avgFlag = false;
     }
 
@@ -110,6 +107,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      */
     public avgCalc(): void {
         if (this._spreadCount) this._avgSpread = this._sumSpread / this._spreadCount;
+        this.reset();
     }
 
     /**
@@ -117,7 +115,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      */
     private spreadCalc(): boolean {
         if (this._ask && this._bid && this._fpoint) {
-            this._spread = Common.roundToFixed((this._ask - this._bid) * Math.pow(10, this._fpoint - 1), 1);
+            this._spread = (this._ask - this._bid) * Math.pow(10, this._fpoint - 1);
             return true;
         } else {
             this._spread = 0;

@@ -1,18 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const moment = require("moment");
-const util = require("util");
+var moment = require("moment");
+var util = require("util");
 var SubscriptionRequestType;
 (function (SubscriptionRequestType) {
 })(SubscriptionRequestType = exports.SubscriptionRequestType || (exports.SubscriptionRequestType = {}));
-class Common {
-    static getTimeStamp(timeStamp, formatStr = 'YYYYMMDD-hh:mm:ss.SSS') {
+var Common = (function () {
+    function Common() {
+    }
+    Common.getTimeStamp = function (timeStamp, formatStr) {
+        if (formatStr === void 0) { formatStr = 'YYYYMMDD-hh:mm:ss.SSS'; }
         if (timeStamp)
             return moment(timeStamp, formatStr).format("YYYYMMDDhhmmssSSS");
         else
             return moment().utc().format("YYYYMMDDhhmmssSSS");
-    }
-    static roundToFixed(num, scale = 5) {
+    };
+    Common.roundToFixed = function (num, scale) {
+        if (scale === void 0) { scale = 5; }
         if (!("" + num).includes("e")) {
             return +(Math.round(+(num + "e+" + scale)) + "e-" + scale);
         }
@@ -24,11 +28,11 @@ class Common {
             }
             return +(Math.round(+(+arr[0] + "e" + sig + (+arr[1] + scale))) + "e-" + scale);
         }
-    }
-    static loadAppConfig(path) {
+    };
+    Common.loadAppConfig = function (path) {
         return require(path);
-    }
-    static makeFConfig(appConfig) {
+    };
+    Common.makeFConfig = function (appConfig) {
         return {
             "application": {
                 "reconnectSeconds": 10,
@@ -50,20 +54,23 @@ class Common {
             "TargetCompID": appConfig.FTargetID,
             "BeginString": appConfig.FMsgType
         };
-    }
-    static delay(p) {
-        return new Promise((accept) => {
+    };
+    Common.delay = function (p) {
+        return new Promise(function (accept) {
             if (!p) {
                 accept();
             }
-            setTimeout(() => {
+            setTimeout(function () {
                 accept();
             }, p);
         });
-    }
-    static objToString(obj) {
+    };
+    Common.objToString = function (obj) {
         return util.inspect(obj, false, null, true);
-    }
-}
+    };
+    Common.startInteval = function (fnc, ms) {
+        return setInterval(fnc, ms);
+    };
+    return Common;
+}());
 exports.Common = Common;
-//# sourceMappingURL=common.js.map

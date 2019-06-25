@@ -1,10 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
-const jspurefix_1 = require("jspurefix");
-class MarketDataFactory {
-    static createMarketDataRequest(requestId, msgType = repo_1.SubscriptionRequestType.SnapshotAndUpdates, symbol, updateType = null) {
-        let instruments = {
+var repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
+var jspurefix_1 = require("jspurefix");
+var MarketDataFactory = (function () {
+    function MarketDataFactory() {
+    }
+    MarketDataFactory.createMarketDataRequest = function (requestId, msgType, symbol, updateType) {
+        if (msgType === void 0) { msgType = repo_1.SubscriptionRequestType.SnapshotAndUpdates; }
+        if (updateType === void 0) { updateType = null; }
+        var instruments = {
             Instrument: {
                 Symbol: symbol
             }
@@ -15,31 +19,32 @@ class MarketDataFactory {
             MarketDepth: 0,
             InstrmtMDReqGrp: [instruments],
         };
-    }
-    static createSecurityListRequest(requestId, msgType = repo_1.SecurityListRequestType.Symbol) {
+    };
+    MarketDataFactory.createSecurityListRequest = function (requestId, msgType) {
+        if (msgType === void 0) { msgType = repo_1.SecurityListRequestType.Symbol; }
         return {
             SecurityReqID: requestId,
             SecurityListRequestType: msgType
         };
-    }
-    static createTestRequest(requestId) {
+    };
+    MarketDataFactory.createTestRequest = function (requestId) {
         return {
             TestReqID: requestId
         };
-    }
-    static createMassQuoteAcknowledgement(quoteId) {
+    };
+    MarketDataFactory.createMassQuoteAcknowledgement = function (quoteId) {
         return {
             QuoteID: quoteId
         };
-    }
-    static parseLiveQuotes(msgType, msgView) {
+    };
+    MarketDataFactory.parseLiveQuotes = function (msgType, msgView) {
         try {
             switch (msgType) {
                 case jspurefix_1.MsgType.MarketDataSnapshotFullRefresh: {
-                    const md = msgView.toObject();
-                    const b = (md.MDFullGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Bid)) ? md.MDFullGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Bid).MDEntryPx : 0;
-                    const a = (md.MDFullGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Offer)) ? md.MDFullGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Offer).MDEntryPx : 0;
-                    let lq = {
+                    var md = msgView.toObject();
+                    var b = (md.MDFullGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Bid; })) ? md.MDFullGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Bid; }).MDEntryPx : 0;
+                    var a = (md.MDFullGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Offer; })) ? md.MDFullGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Offer; }).MDEntryPx : 0;
+                    var lq = {
                         timeStamp: md.StandardHeader.SendingTime,
                         symbol: md.Instrument.Symbol,
                         bid: b,
@@ -48,10 +53,10 @@ class MarketDataFactory {
                     return [lq];
                 }
                 case jspurefix_1.MsgType.MarketDataIncrementalRefresh: {
-                    const md = msgView.toObject();
-                    const b = (md.MDIncGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Bid)) ? md.MDIncGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Bid).MDEntryPx : 0;
-                    const a = (md.MDIncGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Offer)) ? md.MDIncGrp.find(g => g.MDEntryType === repo_1.MDEntryType.Offer).MDEntryPx : 0;
-                    let lq = {
+                    var md = msgView.toObject();
+                    var b = (md.MDIncGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Bid; })) ? md.MDIncGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Bid; }).MDEntryPx : 0;
+                    var a = (md.MDIncGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Offer; })) ? md.MDIncGrp.find(function (g) { return g.MDEntryType === repo_1.MDEntryType.Offer; }).MDEntryPx : 0;
+                    var lq = {
                         timeStamp: md.StandardHeader.SendingTime,
                         symbol: md.MDIncGrp[0].Instrument.Symbol,
                         bid: b,
@@ -60,14 +65,14 @@ class MarketDataFactory {
                     return [lq];
                 }
                 case jspurefix_1.MsgType.MassQuote: {
-                    const mq = msgView.toObject();
-                    const quoteSets = mq.QuotSetGrp;
-                    const lqs = quoteSets.map(q => {
-                        let lq = {
-                            timeStamp: mq.StandardHeader.SendingTime,
+                    var mq_1 = msgView.toObject();
+                    var quoteSets = mq_1.QuotSetGrp;
+                    var lqs = quoteSets.map(function (q) {
+                        var lq = {
+                            timeStamp: mq_1.StandardHeader.SendingTime,
                             reqID: q.QuoteSetID,
-                            bid: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').BidSpotRate : -1,
-                            ask: q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate ? q.QuotEntryGrp.find(e => e.QuoteEntryID == '0').OfferSpotRate : -1
+                            bid: q.QuotEntryGrp.find(function (e) { return e.QuoteEntryID == '0'; }).BidSpotRate ? q.QuotEntryGrp.find(function (e) { return e.QuoteEntryID == '0'; }).BidSpotRate : -1,
+                            ask: q.QuotEntryGrp.find(function (e) { return e.QuoteEntryID == '0'; }).OfferSpotRate ? q.QuotEntryGrp.find(function (e) { return e.QuoteEntryID == '0'; }).OfferSpotRate : -1
                         };
                         return lq;
                     });
@@ -81,7 +86,7 @@ class MarketDataFactory {
         catch (error) {
             throw new Error('Error parsing LiveQuote - ' + error);
         }
-    }
-}
+    };
+    return MarketDataFactory;
+}());
 exports.MarketDataFactory = MarketDataFactory;
-//# sourceMappingURL=marketdata-factory.js.map

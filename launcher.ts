@@ -12,8 +12,10 @@ export abstract class Launcher {
         var root = __dirname
         const init = path.join(root, appConfig)
         this.logger.info(`init = ${init}`)
-        this.appConfig = require(init)
+        // let buffer = fs.readFileSync(init)        
+        // this.appConfig = JSON.parse(buffer.toString());
         //this.appConfig.AvgTerm = 5
+        this.appConfig = require(init);
     }
 
     protected abstract getInitiator(fConfig: IJsFixConfig): Promise<any>
