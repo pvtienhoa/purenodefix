@@ -44,7 +44,7 @@ export class MarketDataClient extends AsciiSession {
         super(config);
         this.logReceivedMsgs = true;
         this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 1024 * 1024 * 1024, true);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new Dictionary<LiveQuote>();
@@ -69,7 +69,7 @@ export class MarketDataClient extends AsciiSession {
     protected onApplicationMsg(msgType: string, view: MsgView): void {
         //this.logger.debug(`${view.toJson()}`)
         switch (msgType) {
-            case MsgType.MassQuote:
+            case MsgType.MassQuote:                
                 var quoteID = view.getString(MsgTag.QuoteID);
                 if (quoteID) {
                     let mqa: IMassQuoteAcknowledgement = MarketDataFactory.createMassQuoteAcknowledgement(quoteID);
@@ -81,6 +81,8 @@ export class MarketDataClient extends AsciiSession {
                 let lqs = MarketDataFactory.parseLiveQuotes(msgType, view);
                 if (!lqs.length) throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(e => {
+                    this.eventLog.info('e:');
+                    this.eventLog.info(Common.objToString(e));
                     let lqToUpdate: LiveQuote
                     if (e.symbol) lqToUpdate = this.liveQuotes.get(e.symbol)
                     else lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID)
@@ -158,30 +160,30 @@ export class MarketDataClient extends AsciiSession {
                 this.dailyReconnectCronJob.start();
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
 
-                // setInterval(() => {
-                //     if (this.isIdling) this.idleDuration += 200
-                //     else this.idleDuration = 0;
-                //     this.isIdling = true;
-                //     if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-                //         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                //         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                //         this.done();
-                //     }
+                setInterval(() => {
+                    if (this.isIdling) this.idleDuration+= 200
+                    else this.idleDuration = 0;
+                    this.isIdling = true;
+                    if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
+                        this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.idleDuration = 0;
+                        this.done();
+                    }
 
-                //     if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
+                    if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
 
-                //         this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
-                //             if (res) this.logger.info(`LiveQuotes Updated`);
-                //         }).catch((err) => {
-                //             throw err;
-                //         });
-                //     }
-                //     this.liveQuotes.values().forEach(lq => {
-                //         lq.lqFlag = false;
-                //         this.liveQuotes.addUpdate(lq.symbol, lq);
-                //     });
-                // }, 200);
-                Common.startInteval(this.clientTick,200);
+                        this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
+                            if (res) this.logger.info(`LiveQuotes Updated`);
+                        }).catch((err) => {
+                            throw err;
+                        });
+                    }
+                    this.liveQuotes.values().forEach(lq => {
+                        lq.lqFlag = false;
+                        this.liveQuotes.addUpdate(lq.symbol, lq);
+                    });
+                }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             })
         } catch (error) {
@@ -232,7 +234,6 @@ export class MarketDataClient extends AsciiSession {
 
     protected stopClient() {
         this.done();
-
     }
 
     protected clientTick(self: MarketDataClient): void {

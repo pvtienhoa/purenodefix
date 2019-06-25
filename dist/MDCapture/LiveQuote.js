@@ -115,8 +115,7 @@ var LiveQuote = (function () {
     };
     LiveQuote.prototype.avgCalc = function () {
         if (this._spreadCount)
-            this._avgSpread = this._sumSpread / this._spreadCount;
-        this.reset();
+            this._avgSpread = this.sumSpread / this._spreadCount;
     };
     LiveQuote.prototype.spreadCalc = function () {
         if (this._ask && this._bid && this._fpoint) {

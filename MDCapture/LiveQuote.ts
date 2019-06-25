@@ -87,7 +87,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
     /**
      * reset
      */
-    private reset(): void {
+    public reset(): void {
         this._sumSpread = 0;
         this._spreadCount = 0;
         this._avgFlag = false;
@@ -106,8 +106,7 @@ export class LiveQuote implements ILiveQuote, IAverageSpread {
      * avgCalc
      */
     public avgCalc(): void {
-        if (this._spreadCount) this._avgSpread = this._sumSpread / this._spreadCount;
-        this.reset();
+        if (this._spreadCount) this._avgSpread = this.sumSpread / this._spreadCount;
     }
 
     /**

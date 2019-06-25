@@ -29,7 +29,7 @@ var MarketDataClient = (function (_super) {
         _this.appConfig = appConfig;
         _this.logReceivedMsgs = true;
         _this.fixLog = config.logFactory.plain(_this.appConfig.FMsgType + "-" + _this.appConfig.FUserName + "-" + _this.appConfig.FSenderID + "-" + _this.appConfig.FTargetID + ".messages", 5 * 1024 * 1024 * 1024);
-        _this.eventLog = config.logFactory.plain(_this.appConfig.FMsgType + "-" + _this.appConfig.FUserName + "-" + _this.appConfig.FSenderID + "-" + _this.appConfig.FTargetID + ".event", 1024 * 1024 * 1024, true);
+        _this.eventLog = config.logFactory.plain(_this.appConfig.FMsgType + "-" + _this.appConfig.FUserName + "-" + _this.appConfig.FSenderID + "-" + _this.appConfig.FTargetID + ".event", 100 * 1024 * 1024);
         _this.logger = config.logFactory.logger(_this.me + ":MDClient");
         _this.dbConnector = new dbconnector_1.DBConnector(_this.appConfig, config.logFactory);
         _this.liveQuotes = new jspurefix_1.Dictionary();
@@ -67,6 +67,8 @@ var MarketDataClient = (function (_super) {
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(function (e) {
+                    _this.eventLog.info('e:');
+                    _this.eventLog.info(common_1.Common.objToString(e));
                     var lqToUpdate;
                     if (e.symbol)
                         lqToUpdate = _this.liveQuotes.get(e.symbol);
@@ -118,7 +120,31 @@ var MarketDataClient = (function (_super) {
                 _this.eventLog.info("Cronjob for inserting AvgSpreads Started!");
                 _this.dailyReconnectCronJob.start();
                 _this.eventLog.info("Cronjob for daily Reconnect Started!");
-                common_1.Common.startInteval(_this.clientTick, 200);
+                setInterval(function () {
+                    if (_this.isIdling)
+                        _this.idleDuration += 200;
+                    else
+                        _this.idleDuration = 0;
+                    _this.isIdling = true;
+                    if (_this.idleDuration >= _this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
+                        _this.eventLog.info("Client has been idle for " + _this.appConfig.FNoMsgResetTimeout + " minutes, Reconnecting");
+                        _this.logger.info("Client has been idle for " + _this.appConfig.FNoMsgResetTimeout + " minutes, Reconnecting");
+                        _this.idleDuration = 0;
+                        _this.done();
+                    }
+                    if (_this.liveQuotes && _this.dbConnector && _this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
+                        _this.dbConnector.updateLiveQuotes(_this.liveQuotes.values()).then(function (res) {
+                            if (res)
+                                _this.logger.info("LiveQuotes Updated");
+                        }).catch(function (err) {
+                            throw err;
+                        });
+                    }
+                    _this.liveQuotes.values().forEach(function (lq) {
+                        lq.lqFlag = false;
+                        _this.liveQuotes.addUpdate(lq.symbol, lq);
+                    });
+                }, 200);
                 _this.eventLog.info("Interval job for updating LiveQuotes Started!");
             });
         }
