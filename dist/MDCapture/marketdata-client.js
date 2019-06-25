@@ -13,6 +13,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 var jspurefix_1 = require("jspurefix");
 var cron = require("node-cron");
 var repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
@@ -40,6 +41,35 @@ var MarketDataClient = (function (_super) {
             _this.logger.info("inserting AVGSpreads...");
             if (_this.liveQuotes && _this.dbConnector)
                 _this.dbConnector.insertAvgSpreads(_this.liveQuotes.values());
+=======
+const jspurefix_1 = require("jspurefix");
+const cron = require("node-cron");
+const repo_1 = require("jspurefix/dist/types/FIX4.4/repo");
+const marketdata_factory_1 = require("./marketdata-factory");
+const dbconnector_1 = require("./dbconnector");
+const common_1 = require("./common");
+const LiveQuote_1 = require("./LiveQuote");
+const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
+const moment = require("moment");
+class MarketDataClient extends jspurefix_1.AsciiSession {
+    constructor(config, appConfig) {
+        super(config);
+        this.config = config;
+        this.appConfig = appConfig;
+        this.logReceivedMsgs = true;
+        this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024);
+        this.logger = config.logFactory.logger(`${this.me}:MDClient`);
+        this.dbConnector = new dbconnector_1.DBConnector(this.appConfig, config.logFactory);
+        this.liveQuotes = new jspurefix_1.Dictionary();
+        this.msgCount = 0;
+        this.isIdling = false;
+        this.idleDuration = moment.duration(0);
+        this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
+            this.logger.info(`inserting AVGSpreads...`);
+            if (this.liveQuotes && this.dbConnector)
+                this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
+>>>>>>> parent of 8a2c063... Fix average calc
         }, { scheduled: false });
         _this.dailyReconnectCronJob = cron.schedule("0 2 * * *", function () {
             _this.logger.info("Daily disconnected");
@@ -66,10 +96,17 @@ var MarketDataClient = (function (_super) {
                 var lqs = marketdata_factory_1.MarketDataFactory.parseLiveQuotes(msgType, view);
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
+<<<<<<< HEAD
                 lqs.forEach(function (e) {
                     _this.eventLog.info('e:');
                     _this.eventLog.info(common_1.Common.objToString(e));
                     var lqToUpdate;
+=======
+                lqs.forEach(e => {
+                    this.eventLog.info('e:');
+                    this.eventLog.info(common_1.Common.objToString(e));
+                    let lqToUpdate;
+>>>>>>> parent of 8a2c063... Fix average calc
                     if (e.symbol)
                         lqToUpdate = _this.liveQuotes.get(e.symbol);
                     else
@@ -116,6 +153,7 @@ var MarketDataClient = (function (_super) {
                     _this.eventLog.info("Sending MDRequest to host: " + _this.appConfig.FHost + ": " + _this.appConfig.FPort);
                     _this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
                 });
+<<<<<<< HEAD
                 _this.InsertAvgSpreadCronJob.start();
                 _this.eventLog.info("Cronjob for inserting AvgSpreads Started!");
                 _this.dailyReconnectCronJob.start();
@@ -131,6 +169,23 @@ var MarketDataClient = (function (_super) {
                         _this.logger.info("Client has been idle for " + _this.appConfig.FNoMsgResetTimeout + " minutes, Reconnecting");
                         _this.idleDuration = 0;
                         _this.done();
+=======
+                this.InsertAvgSpreadCronJob.start();
+                this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
+                this.dailyReconnectCronJob.start();
+                this.eventLog.info(`Cronjob for daily Reconnect Started!`);
+                setInterval(() => {
+                    if (this.isIdling)
+                        this.idleDuration.add(200, 'ms');
+                    else
+                        this.idleDuration = moment.duration(0);
+                    this.isIdling = true;
+                    if (this.idleDuration.asMinutes() >= this.appConfig.FNoMsgResetTimeout) {
+                        this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+                        this.idleDuration = moment.duration(0);
+                        this.done();
+>>>>>>> parent of 8a2c063... Fix average calc
                     }
                     if (_this.liveQuotes && _this.dbConnector && _this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
                         _this.dbConnector.updateLiveQuotes(_this.liveQuotes.values()).then(function (res) {
