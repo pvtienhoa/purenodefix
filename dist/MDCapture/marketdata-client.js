@@ -50,8 +50,6 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 if (!lqs.length)
                     throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(e => {
-                    this.eventLog.info('e:');
-                    this.eventLog.info(common_1.Common.objToString(e));
                     let lqToUpdate;
                     if (e.symbol)
                         lqToUpdate = this.liveQuotes.get(e.symbol);

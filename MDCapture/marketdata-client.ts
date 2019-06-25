@@ -81,8 +81,6 @@ export class MarketDataClient extends AsciiSession {
                 let lqs = MarketDataFactory.parseLiveQuotes(msgType, view);
                 if (!lqs.length) throw new Error('no LiveQuotes from Parsed!');
                 lqs.forEach(e => {
-                    this.eventLog.info('e:');
-                    this.eventLog.info(Common.objToString(e));
                     let lqToUpdate: LiveQuote
                     if (e.symbol) lqToUpdate = this.liveQuotes.get(e.symbol)
                     else lqToUpdate = this.liveQuotes.values().find(x => x.reqID === e.reqID)
