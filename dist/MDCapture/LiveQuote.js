@@ -24,7 +24,6 @@ var LiveQuote = (function () {
         this._lqFlag = _lqFlag;
         this._avgFlag = _avgFlag;
     }
-<<<<<<< HEAD
     Object.defineProperty(LiveQuote.prototype, "reqID", {
         get: function () { return this._reqID; },
         set: function (v) { this._reqID = v; },
@@ -104,36 +103,6 @@ var LiveQuote = (function () {
         configurable: true
     });
     LiveQuote.prototype.reset = function () {
-        this._sumSpread = 0;
-=======
-    get reqID() { return this._reqID; }
-    set reqID(v) { this._reqID = v; }
-    get timeStamp() { return this._timeStamp; }
-    set timeStamp(v) { this._timeStamp = v; }
-    get symbol() { return this._symbol; }
-    set symbol(v) { this._symbol = v; }
-    get brokerName() { return this._brokerName; }
-    set brokerName(v) { this._brokerName = v; }
-    get bid() { return this._bid; }
-    set bid(v) { this._bid = v; }
-    get ask() { return this._ask; }
-    set ask(v) { this._ask = v; }
-    get fpoint() { return this._fpoint; }
-    set fpoint(v) { this._fpoint = v; }
-    get spread() { return this._spread; }
-    set spread(v) { this._spread = v; }
-    get sumSpread() { return this._sumSpread; }
-    set sumSpread(v) { this._sumSpread = v; }
-    get avgSpread() { return this._avgSpread; }
-    set avgSpread(v) { this._avgSpread = v; }
-    get msgCount() { return this._spreadCount; }
-    set msgCount(v) { this._spreadCount = v; }
-    get lqFlag() { return this._lqFlag; }
-    set lqFlag(v) { this._lqFlag = v; }
-    get avgFlag() { return this._avgFlag; }
-    set avgFlag(v) { this._avgFlag = v; }
-    reset() {
->>>>>>> parent of 8a2c063... Fix average calc
         this._spreadCount = 0;
         this._avgFlag = false;
     };
@@ -146,13 +115,8 @@ var LiveQuote = (function () {
     LiveQuote.prototype.avgCalc = function () {
         if (this._spreadCount)
             this._avgSpread = this.sumSpread / this._spreadCount;
-<<<<<<< HEAD
     };
     LiveQuote.prototype.spreadCalc = function () {
-=======
-    }
-    spreadCalc() {
->>>>>>> parent of 8a2c063... Fix average calc
         if (this._ask && this._bid && this._fpoint) {
             this._spread = (this._ask - this._bid) * Math.pow(10, this._fpoint - 1);
             return true;

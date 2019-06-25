@@ -38,7 +38,7 @@ export class MarketDataClient extends AsciiSession {
     private dailyReconnectCronJob: cron.ScheduledTask
     private msgCount: number
     private isIdling: boolean
-    private idleDuration: moment.Duration
+    private idleDuration: number
     private tmpTrans: MsgTransport
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config);
@@ -50,7 +50,7 @@ export class MarketDataClient extends AsciiSession {
         this.liveQuotes = new Dictionary<LiveQuote>();
         this.msgCount = 0;
         this.isIdling = false;
-        this.idleDuration = moment.duration(0);
+        this.idleDuration = 0;
         this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
             this.logger.info(`inserting AVGSpreads...`)
             if (this.liveQuotes && this.dbConnector) this.dbConnector.insertAvgSpreads(this.liveQuotes.values());
@@ -161,22 +161,13 @@ export class MarketDataClient extends AsciiSession {
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
 
                 setInterval(() => {
-<<<<<<< HEAD
-                    if (this.isIdling) this.idleDuration+= 200
+                    if (this.isIdling) this.idleDuration += 200
                     else this.idleDuration = 0;
-=======
-                    if (this.isIdling) this.idleDuration.add(200, 'ms')
-                    else this.idleDuration = moment.duration(0);
->>>>>>> parent of 8a2c063... Fix average calc
                     this.isIdling = true;
-                    if (this.idleDuration.asMinutes() >= this.appConfig.FNoMsgResetTimeout) {
+                    if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
                         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
                         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-<<<<<<< HEAD
                         this.idleDuration = 0;
-=======
-                        this.idleDuration = moment.duration(0);
->>>>>>> parent of 8a2c063... Fix average calc
                         this.done();
                     }
 
