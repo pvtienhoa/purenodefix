@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
-    "sourceMap": false,
-    "inlineSources": false,
-    "pretty": false,
-    "outDir": "dist"
+    "sourceMap": true,
+    "inlineSources": true,
+    "pretty": true,
+    "outDir": "./dist"
   },
   "compileOnSave": true,
   "include": [

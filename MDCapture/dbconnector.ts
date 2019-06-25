@@ -67,18 +67,18 @@ export class DBConnector {
         };
     }
 
-    public async updateLiveQuotes(lqs: ILiveQuote[]): Promise<boolean> {
+    public async updateLiveQuotes(lqs: ILiveQuote[]) {
         return new Promise<boolean>((accept, reject) => {
             if (this.pool.idleConnections() <= 1) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
-                accept(false);
+                return;
             }
             var lqParams: any[] = [];
             lqs.forEach(lq => {
                 if (lq.lqFlag) {
-                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, Common.roundToFixed(lq.spread,1), lq.symbol])
+                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, lq.spread, lq.symbol])
                 }
-            });
+            })
             if (lqParams.length > 0) {
                 this.pool.batch(`
                 UPDATE ${this.options.TblLiveQuotes} SET 
@@ -93,47 +93,28 @@ export class DBConnector {
                     this.logger.error(new Error('error updating LQ into DB - ' + err.message))
                     reject(err);
                 });
-            } else accept(false);
+            }
+            else accept(false);
         })
     }
-    
-    public async insertAvgSpreads(avgSpreads: IAverageSpread[]): Promise<boolean> {
-        return new Promise<boolean>((accept, reject) => {
+    async insertAvgSpreads(avgSpreads: IAverageSpread[]) {
+        try {
             if (!this.pool.idleConnections()) {
                 this.logger.warning('No idle Connection... Skipped writing to DB!')
-                accept(false);
+                return;
             }
             var aqParams: any[] = [];
             avgSpreads.forEach(avg => {
                 if (avg.avgFlag) {
                     avg.avgCalc();
-                    aqParams.push([Common.getTimeStamp(), this.options.AvgTerm * 60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    aqParams.push([Common.getTimeStamp(), this.options.AvgTerm*60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    // conn.query(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, [Common.getTimeStamp(), this.options.AvgTerm, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    avg.reset();
                 }
             });
-            if (aqParams.length > 0) {
-                this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(
-                    accept(true)
-                ).catch((err: Error) => {
-                    this.logger.error(new Error('error updating AQ into DB - ' + err.message))
-                    reject(err);
-                });
-            } else accept(false);
-        })
-        // try {
-        //     if (!this.pool.idleConnections()) {
-        //         this.logger.warning('No idle Connection... Skipped writing to DB!')
-        //         return;
-        //     }
-        //     var aqParams: any[] = [];
-        //     avgSpreads.forEach(avg => {
-        //         if (avg.avgFlag) {
-        //             avg.avgCalc();
-        //             aqParams.push([Common.getTimeStamp(), this.options.AvgTerm * 60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
-        //         }
-        //     });
-        //     await this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams);
-        // } catch (err) {
-        //     this.logger.error(new Error("Error insertig AvgSpreads to DB - " + err));
-        // }
+            await this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams);
+        } catch (err) {
+            this.logger.error(new Error("Error insertig AvgSpreads to DB - " + err));
+        }
     }
 }

@@ -90,8 +90,4 @@ export class Common {
     public static objToString (obj: object): string {
       return util.inspect(obj, false, null, true /* enable colors */);
     }
-
-    public static startInteval (fnc: any, ms: number) {
-      return setInterval(fnc, ms);
-    }
 }

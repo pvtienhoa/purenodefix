@@ -161,13 +161,12 @@ export class MarketDataClient extends AsciiSession {
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
 
                 setInterval(() => {
-                    if (this.isIdling) this.idleDuration += 200
+                    if (this.isIdling) this.idleDuration += 200;
                     else this.idleDuration = 0;
                     this.isIdling = true;
                     if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
                         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
                         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                        this.idleDuration = 0;
                         this.done();
                     }
 
@@ -209,46 +208,13 @@ export class MarketDataClient extends AsciiSession {
     }
 
     protected updateLiveQuotesTick(self: MarketDataClient): void {
-        if (self.liveQuotes && self.dbConnector && self.sessionState.state === SessionState.PeerLoggedOn) {
-            self.dbConnector.updateLiveQuotes(self.liveQuotes.values()).then((res) => {
-                if (res) self.logger.info(`LiveQuotes Updated`);
-            }).catch((err) => {
-                throw err;
-            });
-        }
+        console.log(`updating LiveQuotes...`);
+        if (self.liveQuotes && self.dbConnector) self.dbConnector.updateLiveQuotes(self.liveQuotes.values());
     }
 
     protected insertAvgSpreadsTick(self: MarketDataClient): void {
-
-        if (self.liveQuotes && self.dbConnector) {
-            self.dbConnector.insertAvgSpreads(self.liveQuotes.values()).then((res) => {
-                if (res) {
-                    self.eventLog.info(`AVGSpreads Inserted`);
-                    self.logger.info(`AVGSpreads Inserted`);
-                }
-            }).catch((err) => {
-                throw err;
-            });
-        }
-    }
-
-    protected stopClient() {
-        this.done();
-    }
-
-    protected clientTick(self: MarketDataClient): void {
-        if (self.isIdling) self.idleDuration += 200
-        else self.idleDuration = 0;
-        self.isIdling = true;
-        if (self.idleDuration >= self.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-            self.eventLog.info(`Client has been idle for ${self.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            self.logger.info(`Client has been idle for ${self.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            self.done();
-        }
-        self.updateLiveQuotesTick(self);
-        self.liveQuotes.values().forEach(lq => {
-            lq.lqFlag = false;
-            self.liveQuotes.addUpdate(lq.symbol, lq);
-        });
+        self.eventLog.info(`inserting AVGSpreads...`)
+        self.logger.info(`inserting AVGSpreads...`)
+        if (self.liveQuotes && self.dbConnector) self.dbConnector.insertAvgSpreads(self.liveQuotes.values());
     }
 }

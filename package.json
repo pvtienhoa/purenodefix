@@ -6,8 +6,6 @@
   "scripts": {
     "install": "cd node_modules/jspurefix && npm run unzip-repo",
     "build": "./node_modules/.bin/tsc",
-    "buildprod": " webpack --mode development",
-    "startprod": "cd dist/MDCapture && node MDClient",
     "start-inspect": "cd dist/MDCapture && node inspect app",
     "start": "cd dist/MDCapture && node app",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,7 +17,8 @@
     "mariadb": "^2.0.5",
     "moment": "^2.24.0",
     "node-cron": "^2.0.3",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "typings": "^2.1.1"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.7",
@@ -28,12 +27,8 @@
     "@types/node-cron": "^2.0.2",
     "@types/sax": "^1.0.1",
     "standard": "^12.0.1",
-    "ts-loader": "^6.0.3",
     "tslint": "^5.17.0",
     "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.5.2",
-    "uglify-js": "^3.6.0",
-    "webpack-cli": "^3.3.4",
-    "webpack-node-externals": "^1.7.2"
+    "typescript": "^3.5.1"
   }
 }
