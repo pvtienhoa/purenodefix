@@ -100,7 +100,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
                 this.dailyReconnectCronJob.start();
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
-                this.clientTickHandler = common_1.Common.startInterval(() => { this.clientTick; }, 200);
+                this.clientTickHandler = common_1.Common.startInterval(() => { this.clientTick(); }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             });
         }

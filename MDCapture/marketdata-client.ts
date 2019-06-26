@@ -181,7 +181,7 @@ export class MarketDataClient extends AsciiSession {
                 //         this.liveQuotes.addUpdate(lq.symbol, lq);
                 //     });
                 // }, 200);
-                this.clientTickHandler = Common.startInterval(() => { this.clientTick }, 200);
+                this.clientTickHandler = Common.startInterval(() => { this.clientTick() }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             })
         } catch (error) {
