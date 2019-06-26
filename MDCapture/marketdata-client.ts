@@ -218,7 +218,7 @@ export class MarketDataClient extends AsciiSession {
 
     protected insertAvgSpreadsTick(): void {
         if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
-            this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
+            this.dbConnector.insertAvgSpreads(this.liveQuotes.values()).then((res) => {
                 if (res) {
                     this.eventLog.info(`inserting AVGSpreads...`);
                     this.logger.info(`inserting AVGSpreads...`);
