@@ -22,14 +22,14 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         this.msgCount = 0;
         this.isIdling = false;
         this.idleDuration = 0;
-        this.clientTickHander = 0;
+        this.clientTickHandler = 0;
         this.InsertAvgSpreadCronJob = cron.schedule(`*/${appConfig.AvgTerm} * * * *`, () => {
-            this.insertAvgSpreadsTick(this);
+            this.insertAvgSpreadsTick();
         }, { scheduled: false });
         this.dailyReconnectCronJob = cron.schedule(`0 2 * * *`, () => {
             this.logger.info(`Daily disconnected`);
             this.eventLog.info(`Daily disconnected`);
-            this.stopClient(this);
+            this.stopClient();
         }, {
             scheduled: false,
             timezone: "Etc/UTC"
@@ -100,7 +100,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                 this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
                 this.dailyReconnectCronJob.start();
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
-                this.clientTickHander = common_1.Common.startInterval(() => { this.clientTick(this); }, 200);
+                this.clientTickHandler = common_1.Common.startInterval(() => { this.clientTick; }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             });
         }
@@ -128,38 +128,38 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             });
         }
     }
-    insertAvgSpreadsTick(self) {
-        if (self.liveQuotes && self.dbConnector && self.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
-            self.dbConnector.updateLiveQuotes(self.liveQuotes.values()).then((res) => {
+    insertAvgSpreadsTick() {
+        if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
+            this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
                 if (res) {
-                    self.eventLog.info(`inserting AVGSpreads...`);
-                    self.logger.info(`inserting AVGSpreads...`);
+                    this.eventLog.info(`inserting AVGSpreads...`);
+                    this.logger.info(`inserting AVGSpreads...`);
                 }
             }).catch((err) => {
                 throw err;
             });
         }
     }
-    clientTick(self) {
-        if (self.isIdling)
-            self.idleDuration += 200;
+    clientTick() {
+        if (this.isIdling)
+            this.idleDuration += 200;
         else
-            self.idleDuration = 0;
-        self.isIdling = true;
-        if (self.idleDuration >= self.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-            self.eventLog.info(`Client has been idle for ${self.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            self.logger.info(`Client has been idle for ${self.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            self.stopClient(self);
+            this.idleDuration = 0;
+        this.isIdling = true;
+        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
+            this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+            this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+            this.stopClient();
         }
-        self.updateLiveQuotesTick();
-        self.liveQuotes.values().forEach(lq => {
+        this.updateLiveQuotesTick();
+        this.liveQuotes.values().forEach(lq => {
             lq.lqFlag = false;
-            self.liveQuotes.addUpdate(lq.symbol, lq);
+            this.liveQuotes.addUpdate(lq.symbol, lq);
         });
     }
-    stopClient(self) {
-        clearInterval(self.clientTickHander);
-        self.done();
+    stopClient() {
+        clearInterval(this.clientTickHandler);
+        this.done();
     }
 }
 exports.MarketDataClient = MarketDataClient;
