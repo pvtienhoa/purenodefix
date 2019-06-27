@@ -1,16 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const moment = require("moment");
+const moment = require("moment-timezone");
 const util = require("util");
 var SubscriptionRequestType;
 (function (SubscriptionRequestType) {
 })(SubscriptionRequestType = exports.SubscriptionRequestType || (exports.SubscriptionRequestType = {}));
 class Common {
-    static getTimeStamp(timeStamp, formatStr = 'YYYYMMDD-hh:mm:ss.SSS') {
+    static getTimeStamp(timeZone, timeStamp, formatStr = 'YYYYMMDD-hh:mm:ss.SSS') {
         if (timeStamp)
-            return moment(timeStamp, formatStr).format("YYYYMMDDhhmmssSSS");
+            return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDhhmmssSSS");
         else
-            return moment().utc().format("YYYYMMDDhhmmssSSS");
+            return moment().tz(timeZone).format("YYYYMMDDhhmmssSSS");
     }
     static roundToFixed(num, scale = 5) {
         if (!("" + num).includes("e")) {

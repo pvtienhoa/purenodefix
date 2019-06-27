@@ -201,7 +201,7 @@ export class MarketDataClient extends AsciiSession {
 
     // onLogon Event Listener
     protected onLogon(view: MsgView, user: string, password: string): boolean {
-        this.eventLog.info('Tring to Log on!');
+        this.eventLog.info('Trying to Log on!');
         this.logger.info(`peer logs in user ${user}`)
         return true
     }
@@ -220,8 +220,8 @@ export class MarketDataClient extends AsciiSession {
         if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
             this.dbConnector.insertAvgSpreads(this.liveQuotes.values()).then((res) => {
                 if (res) {
-                    this.eventLog.info(`inserting AVGSpreads...`);
-                    this.logger.info(`inserting AVGSpreads...`);
+                    this.eventLog.info(`AVGSpreads Inserted`);
+                    this.logger.info(`AVGSpreads Inserted`);
                 }
             }).catch((err) => {
                 throw err;

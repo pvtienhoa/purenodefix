@@ -114,7 +114,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         });
     }
     onLogon(view, user, password) {
-        this.eventLog.info('Tring to Log on!');
+        this.eventLog.info('Trying to Log on!');
         this.logger.info(`peer logs in user ${user}`);
         return true;
     }
@@ -132,8 +132,8 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         if (this.liveQuotes && this.dbConnector && this.sessionState.state === jspurefix_1.SessionState.PeerLoggedOn) {
             this.dbConnector.insertAvgSpreads(this.liveQuotes.values()).then((res) => {
                 if (res) {
-                    this.eventLog.info(`inserting AVGSpreads...`);
-                    this.logger.info(`inserting AVGSpreads...`);
+                    this.eventLog.info(`AVGSpreads Inserted`);
+                    this.logger.info(`AVGSpreads Inserted`);
                 }
             }).catch((err) => {
                 throw err;

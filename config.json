@@ -19,5 +19,6 @@
     "TblSymbols" : "Symbols",
     "TblLiveQuotes": "LiveQuotesLD",
     "TblAverageSpreads": "AverageSpreads",
-    "AvgTerm": 5
+    "AvgTerm": 5,
+    "TimeZone": "Europe/Berlin"
 }

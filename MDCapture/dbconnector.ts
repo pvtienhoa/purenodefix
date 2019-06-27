@@ -6,35 +6,35 @@ import { ILiveQuote, IAverageSpread } from './LiveQuote';
 import { promises } from 'fs';
 
 export class DBConnector {
-    private readonly options: IAppConfig
+    private readonly appConfig: IAppConfig
     private readonly pool: any
     private readonly logger: IJsFixLogger
 
     constructor(opt: IAppConfig, logFactory: JsFixLoggerFactory) {
         this.logger = logFactory.logger('dbconnector')
-        this.options = opt;
+        this.appConfig = opt;
         debugger
-        if (this.options.DBHost) {
+        if (this.appConfig.DBHost) {
             this.pool = mariadb.createPool({
-                host: this.options.DBHost,
-                user: this.options.DBUserName,
-                password: this.options.DBPassword,
-                database: this.options.DBDatabase,
+                host: this.appConfig.DBHost,
+                user: this.appConfig.DBUserName,
+                password: this.appConfig.DBPassword,
+                database: this.appConfig.DBDatabase,
                 connectionLimit: 20
             });
         } else {
             this.pool = mariadb.createPool({
-                socketPath: this.options.DBSocketPath,
-                user: this.options.DBUserName,
-                password: this.options.DBPassword,
-                database: this.options.DBDatabase,
+                socketPath: this.appConfig.DBSocketPath,
+                user: this.appConfig.DBUserName,
+                password: this.appConfig.DBPassword,
+                database: this.appConfig.DBDatabase,
                 connectionLimit: 20
             });
         }
 
     }
     public async querySymbols(): Promise<any[]> {
-        const rows: any[] = await this.pool.query(`Select * From ${this.options.TblSymbols} Where LiveQuotes = ?`, [1]);
+        const rows: any[] = await this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]);
         if (rows) {
             return rows;
         }
@@ -75,12 +75,12 @@ export class DBConnector {
             var lqParams: any[] = [];
             lqs.forEach(lq => {
                 if (lq.lqFlag) {
-                    lqParams.push([Common.getTimeStamp(lq.timeStamp), this.options.FBrokerName, lq.bid, lq.ask, Common.roundToFixed(lq.spread,1), lq.symbol])
+                    lqParams.push([Common.getTimeStamp(this.appConfig.TimeZone, lq.timeStamp), this.appConfig.FBrokerName, lq.bid, lq.ask, Common.roundToFixed(lq.spread, 1), lq.symbol])
                 }
             })
             if (lqParams.length > 0) {
                 this.pool.batch(`
-                UPDATE ${this.options.TblLiveQuotes} SET 
+                UPDATE ${this.appConfig.TblLiveQuotes} SET 
                     TimeStamp = ?, 
                     BrokerName = ?, 
                     Bid = ?, 
@@ -106,12 +106,12 @@ export class DBConnector {
             avgSpreads.forEach(avg => {
                 if (avg.avgFlag) {
                     avg.avgCalc();
-                    aqParams.push([Common.getTimeStamp(), this.options.AvgTerm*60, this.options.FBrokerName, avg.symbol, avg.avgSpread]);
+                    aqParams.push([Common.getTimeStamp(this.appConfig.TimeZone), this.appConfig.AvgTerm * 60, this.appConfig.FBrokerName, avg.symbol, avg.avgSpread]);
                     //avg.reset();
                 }
             });
             if (aqParams.length > 0) {
-                this.pool.batch(`INSERT INTO ${this.options.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(
+                this.pool.batch(`INSERT INTO ${this.appConfig.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(
                     accept(true)
                 ).catch((err: Error) => {
                     this.logger.error(new Error('error updating AQ into DB - ' + err.message))

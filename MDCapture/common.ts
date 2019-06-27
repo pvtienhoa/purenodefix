@@ -1,4 +1,4 @@
-import * as moment from 'moment'
+import * as moment from 'moment-timezone'
 import * as fs from 'fs'
 import * as util from 'util'
 
@@ -27,11 +27,12 @@ export interface IAppConfig {
   TblLiveQuotes: string
   TblAverageSpreads: string
   AvgTerm: number
+  TimeZone: string
 }
 export class Common {
-  public static getTimeStamp(timeStamp?: Date, formatStr: string = 'YYYYMMDD-hh:mm:ss.SSS'): string {
-    if (timeStamp) return moment(timeStamp, formatStr).format("YYYYMMDDhhmmssSSS")
-    else return moment().utc().format("YYYYMMDDhhmmssSSS");
+  public static getTimeStamp(timeZone: string, timeStamp?: Date, formatStr: string = 'YYYYMMDD-hh:mm:ss.SSS'): string {
+    if (timeStamp) return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDhhmmssSSS")
+    else return moment().tz(timeZone).format("YYYYMMDDhhmmssSSS");
   }
 
   public static roundToFixed(num: number, scale: number = 5): number {
