@@ -30,9 +30,9 @@ export interface IAppConfig {
   TimeZone: string
 }
 export class Common {
-  public static getTimeStamp(timeZone: string, timeStamp?: Date, formatStr: string = 'YYYYMMDD-hh:mm:ss.SSS'): string {
-    if (timeStamp) return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDhhmmssSSS")
-    else return moment().tz(timeZone).format("YYYYMMDDhhmmssSSS");
+  public static getTimeStamp(timeZone: string, timeStamp?: Date, formatStr: string = 'YYYYMMDD-HH:mm:ss.SSS'): string {
+    if (timeStamp) return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDHHmmssSSS")
+    else return moment().tz(timeZone).format("YYYYMMDDHHmmssSSS");
   }
 
   public static roundToFixed(num: number, scale: number = 5): number {

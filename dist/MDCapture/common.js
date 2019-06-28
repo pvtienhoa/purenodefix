@@ -6,11 +6,11 @@ var SubscriptionRequestType;
 (function (SubscriptionRequestType) {
 })(SubscriptionRequestType = exports.SubscriptionRequestType || (exports.SubscriptionRequestType = {}));
 class Common {
-    static getTimeStamp(timeZone, timeStamp, formatStr = 'YYYYMMDD-hh:mm:ss.SSS') {
+    static getTimeStamp(timeZone, timeStamp, formatStr = 'YYYYMMDD-HH:mm:ss.SSS') {
         if (timeStamp)
-            return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDhhmmssSSS");
+            return moment(timeStamp, formatStr).tz(timeZone).format("YYYYMMDDHHmmssSSS");
         else
-            return moment().tz(timeZone).format("YYYYMMDDhhmmssSSS");
+            return moment().tz(timeZone).format("YYYYMMDDHHmmssSSS");
     }
     static roundToFixed(num, scale = 5) {
         if (!("" + num).includes("e")) {
