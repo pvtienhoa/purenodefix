@@ -23,7 +23,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         this.appConfig = appConfig;
         this.logReceivedMsgs = true;
         this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024, true);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new dbconnector_1.DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new jspurefix_1.Dictionary();
@@ -81,20 +81,12 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         return __awaiter(this, void 0, void 0, function* () {
             this.eventLog.info('Client stopped!');
             this.logger.info('Stopped!');
-            this.liveQuotes = null;
-            this.InsertAvgSpreadCronJob.destroy();
-            this.InsertAvgSpreadCronJob = null;
-            this.InsertAvgSpreadCronJob.destroy();
-            this.InsertAvgSpreadCronJob = null;
-            this.dailyReconnectCronJob.destroy();
-            this.dailyReconnectCronJob = null;
-            this.msgCount = null;
-            this.isIdling = null;
-            this.idleDuration = null;
+            this.InsertAvgSpreadCronJob.stop();
+            this.InsertAvgSpreadCronJob.stop();
+            this.dailyReconnectCronJob.stop();
             clearInterval(this.clientTickHandler);
             this.clientTickHandler = null;
-            yield this.dbConnector.destroy();
-            this.dbConnector = null;
+            yield this.dbConnector.stop();
         });
     }
     onDecoded(msgType, txt) {

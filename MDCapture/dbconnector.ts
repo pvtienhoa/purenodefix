@@ -34,6 +34,17 @@ export class DBConnector {
 
     }
     public async querySymbols(): Promise<any[]> {
+        return new Promise<any[]>((accept, reject) => {
+            this.pool.end()
+                .then(
+                    this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]))
+                .then(accept(rows))
+                .catch((err: Error) => {
+                    this.logger.error(new Error('error querying Symbols - ' + err.message))
+                    reject(err);
+                });
+
+        })
         const rows: any[] = await this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]);
         if (rows) {
             return rows;
@@ -121,14 +132,14 @@ export class DBConnector {
             else accept(false);
         })
     }
-    public async destroy(): Promise<boolean> {
+    public async stop(): Promise<boolean> {
         return new Promise<boolean>((accept, reject) => {
             this.logger = null;
             this.appConfig = null;
-            if (this.pool) this.pool.destroy().then(accept(true)).catch((err: Error) => {
+            if (this.pool) this.pool.end().then(accept(true)).catch((err: Error) => {
                 this.logger.error(new Error('error destroying Connection Pool - ' + err.message))
                 reject(err);
-            }) 
+            })
             else accept(false);
         })
     }

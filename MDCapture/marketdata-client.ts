@@ -43,7 +43,7 @@ export class MarketDataClient extends AsciiSession {
         super(config);
         this.logReceivedMsgs = true;
         this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024, true);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new Dictionary<LiveQuote>();
@@ -107,26 +107,25 @@ export class MarketDataClient extends AsciiSession {
         // this.fixLog = null;
         // this.eventLog = null;
 
-        this.liveQuotes = null;
+        // this.liveQuotes = null;
 
-        this.InsertAvgSpreadCronJob.destroy();
-        this.InsertAvgSpreadCronJob = null
+        this.InsertAvgSpreadCronJob.stop();
+        // this.InsertAvgSpreadCronJob = null
 
-        this.InsertAvgSpreadCronJob.destroy();
-        this.InsertAvgSpreadCronJob = null
+        this.InsertAvgSpreadCronJob.stop();
+        // this.InsertAvgSpreadCronJob = null
 
-        this.dailyReconnectCronJob.destroy();
-        this.dailyReconnectCronJob = null
-        
-        this.msgCount = null
-        this.isIdling = null
-        this.idleDuration = null
+        this.dailyReconnectCronJob.stop();
+        // this.dailyReconnectCronJob = null
+
+        // this.msgCount = null
+        // this.isIdling = null
+        // this.idleDuration = null
 
         clearInterval(this.clientTickHandler);
         this.clientTickHandler = null;
 
-        await this.dbConnector.destroy();
-        this.dbConnector = null;    
+        await this.dbConnector.stop();
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -237,5 +236,5 @@ export class MarketDataClient extends AsciiSession {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);
         });
-    }    
+    }
 }

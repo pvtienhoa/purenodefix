@@ -36,6 +36,15 @@ class DBConnector {
     }
     querySymbols() {
         return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((accept, reject) => {
+                this.pool.end()
+                    .then(this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]))
+                    .then(accept(rows))
+                    .catch((err) => {
+                    this.logger.error(new Error('error querying Symbols - ' + err.message));
+                    reject(err);
+                });
+            });
             const rows = yield this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]);
             if (rows) {
                 return rows;
@@ -103,13 +112,13 @@ class DBConnector {
             });
         });
     }
-    destroy() {
+    stop() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((accept, reject) => {
                 this.logger = null;
                 this.appConfig = null;
                 if (this.pool)
-                    this.pool.destroy().then(accept(true)).catch((err) => {
+                    this.pool.end().then(accept(true)).catch((err) => {
                         this.logger.error(new Error('error destroying Connection Pool - ' + err.message));
                         reject(err);
                     });
