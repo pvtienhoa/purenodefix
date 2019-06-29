@@ -81,9 +81,6 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         return __awaiter(this, void 0, void 0, function* () {
             this.eventLog.info('Client stopped!');
             this.logger.info('Stopped!');
-            this.logger = null;
-            this.fixLog = null;
-            this.eventLog = null;
             this.liveQuotes = null;
             this.InsertAvgSpreadCronJob.destroy();
             this.InsertAvgSpreadCronJob = null;

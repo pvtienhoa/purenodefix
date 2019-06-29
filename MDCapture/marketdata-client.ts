@@ -103,9 +103,9 @@ export class MarketDataClient extends AsciiSession {
         this.eventLog.info('Client stopped!');
         this.logger.info('Stopped!');
 
-        this.logger = null;
-        this.fixLog = null;
-        this.eventLog = null;
+        // this.logger = null;
+        // this.fixLog = null;
+        // this.eventLog = null;
 
         this.liveQuotes = null;
 
