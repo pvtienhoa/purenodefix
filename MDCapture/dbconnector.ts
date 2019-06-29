@@ -6,9 +6,9 @@ import { ILiveQuote, IAverageSpread } from './LiveQuote';
 import { promises } from 'fs';
 
 export class DBConnector {
-    private readonly appConfig: IAppConfig
-    private readonly pool: any
-    private readonly logger: IJsFixLogger
+    private appConfig: IAppConfig
+    private pool: any
+    private logger: IJsFixLogger
 
     constructor(opt: IAppConfig, logFactory: JsFixLoggerFactory) {
         this.logger = logFactory.logger('dbconnector')
@@ -114,10 +114,21 @@ export class DBConnector {
                 this.pool.batch(`INSERT INTO ${this.appConfig.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(
                     accept(true)
                 ).catch((err: Error) => {
-                    this.logger.error(new Error('error updating AQ into DB - ' + err.message))
+                    this.logger.error(new Error('error updating AvgSpread into DB - ' + err.message))
                     reject(err);
                 });
             }
+            else accept(false);
+        })
+    }
+    public async destroy(): Promise<boolean> {
+        return new Promise<boolean>((accept, reject) => {
+            this.logger = null;
+            this.appConfig = null;
+            if (this.pool) this.pool.destroy().then(accept(true)).catch((err: Error) => {
+                this.logger.error(new Error('error destroying Connection Pool - ' + err.message))
+                reject(err);
+            }) 
             else accept(false);
         })
     }

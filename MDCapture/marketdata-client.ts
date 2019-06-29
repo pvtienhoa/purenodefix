@@ -28,9 +28,9 @@ import * as moment from 'moment'
 
 
 export class MarketDataClient extends AsciiSession {
-    private readonly logger: IJsFixLogger
-    private readonly fixLog: IJsFixLogger
-    private readonly eventLog: IJsFixLogger
+    private logger: IJsFixLogger
+    private fixLog: IJsFixLogger
+    private eventLog: IJsFixLogger
     private liveQuotes: Dictionary<LiveQuote>
     private dbConnector: DBConnector
     private InsertAvgSpreadCronJob: cron.ScheduledTask
@@ -38,7 +38,6 @@ export class MarketDataClient extends AsciiSession {
     private msgCount: number
     private isIdling: boolean
     private idleDuration: number
-    private tmpTrans: MsgTransport
     private clientTickHandler: number
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config);
@@ -58,7 +57,7 @@ export class MarketDataClient extends AsciiSession {
         this.dailyReconnectCronJob = cron.schedule(`0 2 * * *`, () => {
             this.logger.info(`Daily disconnected`);
             this.eventLog.info(`Daily disconnected`);
-            this.stopClient();
+            this.done();
         }, {
                 scheduled: false,
                 timezone: "Etc/UTC"
@@ -100,14 +99,34 @@ export class MarketDataClient extends AsciiSession {
     }
 
     // onStop Event Listener
-    protected onStopped(): void {
+    protected async onStopped() {
         this.eventLog.info('Client stopped!');
         this.logger.info('Stopped!');
-        this.InsertAvgSpreadCronJob.stop();
 
+        this.logger = null;
+        this.fixLog = null;
+        this.eventLog = null;
+
+        this.liveQuotes = null;
 
         this.InsertAvgSpreadCronJob.destroy();
+        this.InsertAvgSpreadCronJob = null
+
+        this.InsertAvgSpreadCronJob.destroy();
+        this.InsertAvgSpreadCronJob = null
+
         this.dailyReconnectCronJob.destroy();
+        this.dailyReconnectCronJob = null
+        
+        this.msgCount = null
+        this.isIdling = null
+        this.idleDuration = null
+
+        clearInterval(this.clientTickHandler);
+        this.clientTickHandler = null;
+
+        await this.dbConnector.destroy();
+        this.dbConnector = null;    
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -124,7 +143,6 @@ export class MarketDataClient extends AsciiSession {
     protected onReady(view: MsgView): void {
         this.eventLog.info('Logged on!');
         this.logger.info('ready')
-        this.tmpTrans = this.transport;
 
         // Send Test msg to Server
         // this.logger.info('send test message...')
@@ -157,30 +175,6 @@ export class MarketDataClient extends AsciiSession {
                 this.eventLog.info(`Cronjob for inserting AvgSpreads Started!`);
                 this.dailyReconnectCronJob.start();
                 this.eventLog.info(`Cronjob for daily Reconnect Started!`);
-
-                // setInterval(() => {
-                //     if (this.isIdling) this.idleDuration += 200;
-                //     else this.idleDuration = 0;
-                //     this.isIdling = true;
-                //     if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-                //         this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                //         this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-                //         this.done();
-                //     }
-
-                //     if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
-
-                //         this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
-                //             if (res) this.logger.info(`LiveQuotes Updated`);
-                //         }).catch((err) => {
-                //             throw err;
-                //         });
-                //     }
-                //     this.liveQuotes.values().forEach(lq => {
-                //         lq.lqFlag = false;
-                //         this.liveQuotes.addUpdate(lq.symbol, lq);
-                //     });
-                // }, 200);
                 this.clientTickHandler = Common.startInterval(() => { this.clientTick() }, 200);
                 this.eventLog.info(`Interval job for updating LiveQuotes Started!`);
             })
@@ -236,17 +230,12 @@ export class MarketDataClient extends AsciiSession {
         if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            this.stopClient();
+            this.done();
         }
         this.updateLiveQuotesTick();
         this.liveQuotes.values().forEach(lq => {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);
         });
-    }
-
-    protected stopClient() {
-        clearInterval(this.clientTickHandler);
-        this.done();
-    }
+    }    
 }

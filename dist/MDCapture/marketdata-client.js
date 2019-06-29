@@ -1,4 +1,12 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const jspurefix_1 = require("jspurefix");
 const cron = require("node-cron");
@@ -29,7 +37,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         this.dailyReconnectCronJob = cron.schedule(`0 2 * * *`, () => {
             this.logger.info(`Daily disconnected`);
             this.eventLog.info(`Daily disconnected`);
-            this.stopClient();
+            this.done();
         }, {
             scheduled: false,
             timezone: "Etc/UTC"
@@ -70,11 +78,27 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         }
     }
     onStopped() {
-        this.eventLog.info('Client stopped!');
-        this.logger.info('Stopped!');
-        this.InsertAvgSpreadCronJob.stop();
-        this.InsertAvgSpreadCronJob.destroy();
-        this.dailyReconnectCronJob.destroy();
+        return __awaiter(this, void 0, void 0, function* () {
+            this.eventLog.info('Client stopped!');
+            this.logger.info('Stopped!');
+            this.logger = null;
+            this.fixLog = null;
+            this.eventLog = null;
+            this.liveQuotes = null;
+            this.InsertAvgSpreadCronJob.destroy();
+            this.InsertAvgSpreadCronJob = null;
+            this.InsertAvgSpreadCronJob.destroy();
+            this.InsertAvgSpreadCronJob = null;
+            this.dailyReconnectCronJob.destroy();
+            this.dailyReconnectCronJob = null;
+            this.msgCount = null;
+            this.isIdling = null;
+            this.idleDuration = null;
+            clearInterval(this.clientTickHandler);
+            this.clientTickHandler = null;
+            yield this.dbConnector.destroy();
+            this.dbConnector = null;
+        });
     }
     onDecoded(msgType, txt) {
         this.fixLog.info(txt);
@@ -85,7 +109,6 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
     onReady(view) {
         this.eventLog.info('Logged on!');
         this.logger.info('ready');
-        this.tmpTrans = this.transport;
         try {
             this.dbConnector.querySymbols().then(symbols => {
                 this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`);
@@ -149,17 +172,13 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            this.stopClient();
+            this.done();
         }
         this.updateLiveQuotesTick();
         this.liveQuotes.values().forEach(lq => {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);
         });
-    }
-    stopClient() {
-        clearInterval(this.clientTickHandler);
-        this.done();
     }
 }
 exports.MarketDataClient = MarketDataClient;

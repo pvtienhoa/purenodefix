@@ -94,10 +94,25 @@ class DBConnector {
                 });
                 if (aqParams.length > 0) {
                     this.pool.batch(`INSERT INTO ${this.appConfig.TblAverageSpreads}(TimeStamp, Duration, BrokerName, Symbol, AvgSpread) VALUES (?, ?, ?, ?, ?)`, aqParams).then(accept(true)).catch((err) => {
-                        this.logger.error(new Error('error updating AQ into DB - ' + err.message));
+                        this.logger.error(new Error('error updating AvgSpread into DB - ' + err.message));
                         reject(err);
                     });
                 }
+                else
+                    accept(false);
+            });
+        });
+    }
+    destroy() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((accept, reject) => {
+                this.logger = null;
+                this.appConfig = null;
+                if (this.pool)
+                    this.pool.destroy().then(accept(true)).catch((err) => {
+                        this.logger.error(new Error('error destroying Connection Pool - ' + err.message));
+                        reject(err);
+                    });
                 else
                     accept(false);
             });
