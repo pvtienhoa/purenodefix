@@ -107,13 +107,13 @@ export class MarketDataClient extends AsciiSession {
         this.liveQuotes = null;
 
         this.InsertAvgSpreadCronJob.destroy();
-        this.InsertAvgSpreadCronJob = null
+        // this.InsertAvgSpreadCronJob = null
 
-        this.InsertAvgSpreadCronJob.stop();
-        this.InsertAvgSpreadCronJob = null
+        this.InsertAvgSpreadCronJob.destroy();
+        // this.InsertAvgSpreadCronJob = null
 
-        this.dailyReconnectCronJob.stop();
-        this.dailyReconnectCronJob = null
+        this.dailyReconnectCronJob.destroy();
+        // this.dailyReconnectCronJob = null
 
         this.msgCount = null
         this.isIdling = null

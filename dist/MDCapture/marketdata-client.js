@@ -83,11 +83,8 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             this.clientTickHandler = null;
             this.liveQuotes = null;
             this.InsertAvgSpreadCronJob.destroy();
-            this.InsertAvgSpreadCronJob = null;
-            this.InsertAvgSpreadCronJob.stop();
-            this.InsertAvgSpreadCronJob = null;
-            this.dailyReconnectCronJob.stop();
-            this.dailyReconnectCronJob = null;
+            this.InsertAvgSpreadCronJob.destroy();
+            this.dailyReconnectCronJob.destroy();
             this.msgCount = null;
             this.isIdling = null;
             this.idleDuration = null;
