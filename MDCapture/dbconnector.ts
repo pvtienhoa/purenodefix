@@ -41,7 +41,9 @@ export class DBConnector {
                 reject(new Error('No idle Connection... Querying Symbols!'));
             }
             this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1])
-                .then(accept(rows))
+                .then((rows: any[]) => {
+                    accept(rows)
+                })
                 .catch((err: Error) => {
                     this.logger.error(new Error('error querying Symbols - ' + err.message))
                     reject(err);
