@@ -37,20 +37,21 @@ export abstract class Launcher {
             makeConfig(clientDescription, logFactory, new SessionMsgFactory(clientDescription))
         this.logger.info('create initiator')
         this.logger.info('launching ....')
-        var failedAttemp = 0
-        while (failedAttemp < this.appConfig.FMaxFailAttempNo) {
-            try {
-                var client = await this.getInitiator(clientConfig)
-                failedAttemp = 0;
-                this.logger.warning(`Connection Stopped, try reconnecting after 10 sec...`);
-            } catch (error) {
-                this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
-                failedAttemp++;
-            } finally {
-                await Common.delay(10000);
-            }
-        }
-        return client;
-        //return Promise.all([client])
+        // var failedAttemp = 0
+        // while (failedAttemp < this.appConfig.FMaxFailAttempNo) {
+        //     try {
+        //         var client = await this.getInitiator(clientConfig)
+        //         failedAttemp = 0;
+        //         this.logger.warning(`Connection Stopped, try reconnecting after 10 sec...`);
+        //     } catch (error) {
+        //         this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
+        //         failedAttemp++;
+        //     } finally {
+        //         await Common.delay(10000);
+        //     }
+        // }
+        // return client;
+        var client = await this.getInitiator(clientConfig);
+        return Promise.all([client]);
     }
 }

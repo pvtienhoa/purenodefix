@@ -39,22 +39,8 @@ class Launcher {
             const clientConfig = yield jspurefix_1.makeConfig(clientDescription, logFactory, new jspurefix_1.SessionMsgFactory(clientDescription));
             this.logger.info('create initiator');
             this.logger.info('launching ....');
-            var failedAttemp = 0;
-            while (failedAttemp < this.appConfig.FMaxFailAttempNo) {
-                try {
-                    var client = yield this.getInitiator(clientConfig);
-                    failedAttemp = 0;
-                    this.logger.warning(`Connection Stopped, try reconnecting after 10 sec...`);
-                }
-                catch (error) {
-                    this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${this.appConfig.FMaxFailAttempNo}`);
-                    failedAttemp++;
-                }
-                finally {
-                    yield common_1.Common.delay(10000);
-                }
-            }
-            return client;
+            var client = yield this.getInitiator(clientConfig);
+            return Promise.all([client]);
         });
     }
 }

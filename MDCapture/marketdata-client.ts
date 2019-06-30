@@ -107,25 +107,25 @@ export class MarketDataClient extends AsciiSession {
         // this.fixLog = null;
         // this.eventLog = null;
 
-        // this.liveQuotes = null;
+        this.liveQuotes = null;
+
+        this.InsertAvgSpreadCronJob.destroy();
+        this.InsertAvgSpreadCronJob = null
 
         this.InsertAvgSpreadCronJob.stop();
-        // this.InsertAvgSpreadCronJob = null
-
-        this.InsertAvgSpreadCronJob.stop();
-        // this.InsertAvgSpreadCronJob = null
+        this.InsertAvgSpreadCronJob = null
 
         this.dailyReconnectCronJob.stop();
-        // this.dailyReconnectCronJob = null
+        this.dailyReconnectCronJob = null
 
-        // this.msgCount = null
-        // this.isIdling = null
-        // this.idleDuration = null
+        this.msgCount = null
+        this.isIdling = null
+        this.idleDuration = null
 
         clearInterval(this.clientTickHandler);
         this.clientTickHandler = null;
 
-        //await this.dbConnector.stop();
+        await this.dbConnector.stop();
     }
 
     // use msgType for example to persist only trade capture messages to database
