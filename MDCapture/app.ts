@@ -18,7 +18,7 @@ class AppNfixLauncher extends Launcher {
 
 (async () => {
   var root = __dirname
-  const init = path.join(root, './../config.json')
+  const init = path.join(root, './../../config.json')
   const appConfig = Common.loadAppConfig(init);
   // l.run().then(() => {
   //   console.log('finished.')

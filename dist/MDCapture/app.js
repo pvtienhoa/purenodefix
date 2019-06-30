@@ -23,7 +23,7 @@ class AppNfixLauncher extends launcher_1.Launcher {
 }
 (() => __awaiter(this, void 0, void 0, function* () {
     var root = __dirname;
-    const init = path.join(root, './../config.json');
+    const init = path.join(root, './../../config.json');
     const appConfig = common_1.Common.loadAppConfig(init);
     var failedAttemp = 0;
     while (failedAttemp < appConfig.FMaxFailAttempNo) {
