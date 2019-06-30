@@ -38,8 +38,11 @@ class DBConnector {
     querySymbols() {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((accept, reject) => {
-                this.pool.end()
-                    .then(this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]))
+                if (!this.pool.idleConnections()) {
+                    this.logger.warning('No idle Connection... Querying Symbols!');
+                    reject(new Error('No idle Connection... Querying Symbols!'));
+                }
+                this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1])
                     .then(accept(rows))
                     .catch((err) => {
                     this.logger.error(new Error('error querying Symbols - ' + err.message));

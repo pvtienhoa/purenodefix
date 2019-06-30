@@ -36,9 +36,11 @@ export class DBConnector {
     }
     public async querySymbols(): Promise<any[]> {
         return new Promise<any[]>((accept, reject) => {
-            this.pool.end()
-                .then(
-                    this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]))
+            if (!this.pool.idleConnections()) {
+                this.logger.warning('No idle Connection... Querying Symbols!');
+                reject(new Error('No idle Connection... Querying Symbols!'));
+            }
+            this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1])
                 .then(accept(rows))
                 .catch((err: Error) => {
                     this.logger.error(new Error('error querying Symbols - ' + err.message))
