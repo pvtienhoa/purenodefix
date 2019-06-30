@@ -125,7 +125,7 @@ export class MarketDataClient extends AsciiSession {
         clearInterval(this.clientTickHandler);
         this.clientTickHandler = null;
 
-        await this.dbConnector.stop();
+        //await this.dbConnector.stop();
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -226,7 +226,7 @@ export class MarketDataClient extends AsciiSession {
         if (this.isIdling) this.idleDuration += 200;
         else this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
+        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 1 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();

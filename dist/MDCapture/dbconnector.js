@@ -21,7 +21,8 @@ class DBConnector {
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
                 database: this.appConfig.DBDatabase,
-                connectionLimit: 20
+                connectionLimit: 20,
+                idleTimeout: 30
             });
         }
         else {
