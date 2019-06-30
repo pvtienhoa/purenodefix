@@ -100,12 +100,9 @@ export class MarketDataClient extends AsciiSession {
 
     // onStop Event Listener
     protected async onStopped() {
-        this.eventLog.info('Client stopped!');
-        this.logger.info('Stopped!');
 
-        // this.logger = null;
-        // this.fixLog = null;
-        // this.eventLog = null;
+        clearInterval(this.clientTickHandler);
+        this.clientTickHandler = null;
 
         this.liveQuotes = null;
 
@@ -122,10 +119,15 @@ export class MarketDataClient extends AsciiSession {
         this.isIdling = null
         this.idleDuration = null
 
-        clearInterval(this.clientTickHandler);
-        this.clientTickHandler = null;
 
         await this.dbConnector.stop();
+
+        this.eventLog.info('Client stopped!');
+        this.logger.info('Stopped!');
+
+        // this.logger = null;
+        // this.fixLog = null;
+        // this.eventLog = null;
     }
 
     // use msgType for example to persist only trade capture messages to database

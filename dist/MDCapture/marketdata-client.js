@@ -79,8 +79,8 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
     }
     onStopped() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.eventLog.info('Client stopped!');
-            this.logger.info('Stopped!');
+            clearInterval(this.clientTickHandler);
+            this.clientTickHandler = null;
             this.liveQuotes = null;
             this.InsertAvgSpreadCronJob.destroy();
             this.InsertAvgSpreadCronJob = null;
@@ -91,9 +91,9 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             this.msgCount = null;
             this.isIdling = null;
             this.idleDuration = null;
-            clearInterval(this.clientTickHandler);
-            this.clientTickHandler = null;
             yield this.dbConnector.stop();
+            this.eventLog.info('Client stopped!');
+            this.logger.info('Stopped!');
         });
     }
     onDecoded(msgType, txt) {
