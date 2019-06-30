@@ -12,6 +12,7 @@ const marketdata_client_1 = require("./marketdata-client");
 const jspurefix_1 = require("jspurefix");
 const launcher_1 = require("../launcher");
 const common_1 = require("./common");
+const path = require("path");
 class AppNfixLauncher extends launcher_1.Launcher {
     constructor() {
         super('./../config.json');
@@ -21,7 +22,9 @@ class AppNfixLauncher extends launcher_1.Launcher {
     }
 }
 (() => __awaiter(this, void 0, void 0, function* () {
-    const appConfig = common_1.Common.loadAppConfig('./../config.json');
+    var root = __dirname;
+    const init = path.join(root, './../config.json');
+    const appConfig = common_1.Common.loadAppConfig(init);
     var failedAttemp = 0;
     while (failedAttemp < appConfig.FMaxFailAttempNo) {
         try {

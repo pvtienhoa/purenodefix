@@ -4,6 +4,7 @@ import { Launcher } from '../launcher'
 import { EventEmitter } from 'events';
 import { resolve } from 'path';
 import { Common } from './common';
+import * as path from 'path'
 
 class AppNfixLauncher extends Launcher {
   public constructor() {
@@ -16,11 +17,13 @@ class AppNfixLauncher extends Launcher {
 }
 
 (async () => {
-  const appConfig = Common.loadAppConfig('./../config.json');
+  var root = __dirname
+  const init = path.join(root, './../config.json')
+  const appConfig = Common.loadAppConfig(init);
   // l.run().then(() => {
   //   console.log('finished.')
   // });
-  
+
   var failedAttemp = 0
   while (failedAttemp < appConfig.FMaxFailAttempNo) {
     try {
@@ -35,7 +38,7 @@ class AppNfixLauncher extends Launcher {
     } finally {
       await Common.delay(10000);
     }
-  }    
+  }
 })();
 // const l = new AppNfixLauncher()
 
