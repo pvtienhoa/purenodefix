@@ -69,4 +69,4 @@ data/fix_repo
 
 ./*.txt
 
-./config.json
+./*.json

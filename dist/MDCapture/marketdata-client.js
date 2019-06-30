@@ -162,7 +162,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         else
             this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 1 * 1000) {
+        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
