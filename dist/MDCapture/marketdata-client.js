@@ -123,6 +123,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         catch (error) {
             this.eventLog.error(error);
             this.logger.error(error);
+            throw error;
         }
         process.on('SIGINT', function () {
             console.log("Caught interrupt signal");
@@ -139,8 +140,10 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
                 if (res)
                     this.logger.info(`LiveQuotes Updated`);
-            }).catch((err) => {
-                throw err;
+            }).catch((error) => {
+                this.eventLog.error(error);
+                this.logger.error(error);
+                throw error;
             });
         }
     }
@@ -151,16 +154,20 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
                     this.eventLog.info(`AVGSpreads Inserted`);
                     this.logger.info(`AVGSpreads Inserted`);
                 }
-            }).catch((err) => {
-                throw err;
+            }).catch((error) => {
+                this.eventLog.error(error);
+                this.logger.error(error);
+                throw error;
             });
         }
     }
     clientTick() {
-        if (!this.isIdling)
+        if (this.isIdling)
             this.idleDuration += 200;
+        else
+            this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 2 * 1000) {
+        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
