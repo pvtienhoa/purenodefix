@@ -1,12 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const jspurefix_1 = require("jspurefix");
 const cron = require("node-cron");
@@ -78,20 +70,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         }
     }
     onStopped() {
-        return __awaiter(this, void 0, void 0, function* () {
-            clearInterval(this.clientTickHandler);
-            this.clientTickHandler = null;
-            this.liveQuotes = null;
-            this.InsertAvgSpreadCronJob.destroy();
-            this.InsertAvgSpreadCronJob.destroy();
-            this.dailyReconnectCronJob.destroy();
-            this.msgCount = null;
-            this.isIdling = null;
-            this.idleDuration = null;
-            this.dbConnector.stop();
-            this.eventLog.info('Client stopped!');
-            this.logger.info('Stopped!');
-        });
+        this.cleanup();
     }
     onDecoded(msgType, txt) {
         this.fixLog.info(txt);
@@ -123,6 +102,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         catch (error) {
             this.eventLog.error(error);
             this.logger.error(error);
+            this.cleanup();
             throw error;
         }
         process.on('SIGINT', function () {
@@ -143,6 +123,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             }).catch((error) => {
                 this.eventLog.error(error);
                 this.logger.error(error);
+                this.cleanup();
                 throw error;
             });
         }
@@ -157,6 +138,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             }).catch((error) => {
                 this.eventLog.error(error);
                 this.logger.error(error);
+                this.cleanup();
                 throw error;
             });
         }
@@ -177,6 +159,22 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);
         });
+    }
+    cleanup() {
+        clearInterval(this.clientTickHandler);
+        this.clientTickHandler = null;
+        this.liveQuotes = null;
+        this.InsertAvgSpreadCronJob.destroy();
+        this.InsertAvgSpreadCronJob.destroy();
+        this.dailyReconnectCronJob.destroy();
+        this.msgCount = null;
+        this.isIdling = null;
+        this.idleDuration = null;
+        this.dbConnector.stop();
+        this.eventLog.info('Client stopped!');
+        this.logger.info('Stopped!');
+        this.fixLog = null;
+        this.eventLog = null;
     }
 }
 exports.MarketDataClient = MarketDataClient;

@@ -99,35 +99,9 @@ export class MarketDataClient extends AsciiSession {
     }
 
     // onStop Event Listener
-    protected async onStopped() {
+    protected onStopped() {
 
-        clearInterval(this.clientTickHandler);
-        this.clientTickHandler = null;
-
-        this.liveQuotes = null;
-
-        this.InsertAvgSpreadCronJob.destroy();
-        // this.InsertAvgSpreadCronJob = null
-
-        this.InsertAvgSpreadCronJob.destroy();
-        // this.InsertAvgSpreadCronJob = null
-
-        this.dailyReconnectCronJob.destroy();
-        // this.dailyReconnectCronJob = null
-
-        this.msgCount = null
-        this.isIdling = null
-        this.idleDuration = null
-
-
-        this.dbConnector.stop();
-
-        this.eventLog.info('Client stopped!');
-        this.logger.info('Stopped!');
-
-        // this.logger = null;
-        // this.fixLog = null;
-        // this.eventLog = null;
+        this.cleanup();
     }
 
     // use msgType for example to persist only trade capture messages to database
@@ -182,6 +156,7 @@ export class MarketDataClient extends AsciiSession {
         } catch (error) {
             this.eventLog.error(error);
             this.logger.error(error);
+            this.cleanup();
             throw error;
         }
 
@@ -209,6 +184,7 @@ export class MarketDataClient extends AsciiSession {
             }).catch((error) => {
                 this.eventLog.error(error);
                 this.logger.error(error);
+                this.cleanup();
                 throw error;
             });
         }
@@ -224,6 +200,7 @@ export class MarketDataClient extends AsciiSession {
             }).catch((error) => {
                 this.eventLog.error(error);
                 this.logger.error(error);
+                this.cleanup();
                 throw error;
             });
         }
@@ -243,5 +220,34 @@ export class MarketDataClient extends AsciiSession {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);
         });
+    }
+
+    protected cleanup (): void {
+        clearInterval(this.clientTickHandler);
+        this.clientTickHandler = null;
+
+        this.liveQuotes = null;
+
+        this.InsertAvgSpreadCronJob.destroy();
+        // this.InsertAvgSpreadCronJob = null
+
+        this.InsertAvgSpreadCronJob.destroy();
+        // this.InsertAvgSpreadCronJob = null
+
+        this.dailyReconnectCronJob.destroy();
+        // this.dailyReconnectCronJob = null
+
+        this.msgCount = null
+        this.isIdling = null
+        this.idleDuration = null
+
+
+        this.dbConnector.stop();
+
+        this.eventLog.info('Client stopped!');
+        this.logger.info('Stopped!');
+
+        this.fixLog = null;
+        this.eventLog = null;
     }
 }
