@@ -39,7 +39,7 @@ class AppNfixLauncher extends launcher_1.Launcher {
             failedAttemp++;
         }
         finally {
-            yield common_1.Common.delay(60 * 1000);
+            yield common_1.Common.delay(10 * 1000);
         }
     }
 }))();
