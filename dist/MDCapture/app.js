@@ -32,8 +32,10 @@ class AppNfixLauncher extends launcher_1.Launcher {
             yield l.run();
             failedAttemp = 0;
             l = null;
+            console.log('done');
         }
         catch (error) {
+            console.log(error.message);
             failedAttemp++;
         }
         finally {

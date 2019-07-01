@@ -42,6 +42,7 @@ class DBConnector {
                     this.logger.warning('No idle Connection... Querying Symbols!');
                     reject(new Error('No idle Connection... Querying Symbols!'));
                 }
+                this.logger.info('idle connections: ' + this.pool.idleConnections());
                 this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1])
                     .then((rows) => {
                     accept(rows);
@@ -119,19 +120,15 @@ class DBConnector {
         });
     }
     stop() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((accept, reject) => {
-                this.logger = null;
-                this.appConfig = null;
-                if (this.pool)
-                    this.pool.end().then(accept(true)).catch((err) => {
-                        this.logger.error(new Error('error destroying Connection Pool - ' + err.message));
-                        reject(err);
-                    });
-                else
-                    accept(false);
-            });
+        this.logger = null;
+        this.appConfig = null;
+        this.pool.end()
+            .then()
+            .catch((err) => {
+            this.logger.error(new Error('error destroying Connection Pool - ' + err.message));
+            return false;
         });
+        return true;
     }
 }
 exports.DBConnector = DBConnector;

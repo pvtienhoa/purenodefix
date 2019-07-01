@@ -31,8 +31,10 @@ class AppNfixLauncher extends Launcher {
       await l.run();
       failedAttemp = 0;
       l = null;
+      console.log('done');
       // this.logger.warning(`Connection Stopped, try reconnecting after 10 sec...`);
     } catch (error) {
+      console.log(error.message);
       // this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${appConfig.FMaxFailAttempNo}`);
       failedAttemp++;
     } finally {
