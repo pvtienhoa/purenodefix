@@ -38,7 +38,7 @@ class AppNfixLauncher extends Launcher {
       // this.logger.warning(`Connect error, try reconnecting after 10 sec ... attemp: ${failedAttemp}/${appConfig.FMaxFailAttempNo}`);
       failedAttemp++;
     } finally {
-      await Common.delay(10 * 1000);
+      await Common.delay(60 * 1000);
     }
   }
 })();

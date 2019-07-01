@@ -20,7 +20,7 @@ export class DBConnector {
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
                 database: this.appConfig.DBDatabase,
-                connectionLimit: 100,
+                connectionLimit: 20,
                 idleTimeout: 30
             });
         } else {
@@ -36,10 +36,6 @@ export class DBConnector {
     }
     public async querySymbols(): Promise<any[]> {
         return new Promise<any[]>((accept, reject) => {
-            if (!this.pool.idleConnections()) {
-                this.logger.warning('No idle Connection... Querying Symbols!');
-                reject(new Error('No idle Connection... Querying Symbols!'));
-            }
             this.logger.info('idle connections: ' + this.pool.idleConnections());
             this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1])
                 .then((rows: any[]) => {
@@ -50,15 +46,7 @@ export class DBConnector {
                     reject(err);
                 });
 
-        })
-        const rows: any[] = await this.pool.query(`Select * From ${this.appConfig.TblSymbols} Where LiveQuotes = ?`, [1]);
-        if (rows) {
-            return rows;
-        }
-        else {
-            this.logger.error(new Error('Cannot get Rows!'));
-            return undefined;
-        };
+        });
     }
 
     /**

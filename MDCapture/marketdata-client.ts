@@ -182,6 +182,7 @@ export class MarketDataClient extends AsciiSession {
         } catch (error) {
             this.eventLog.error(error);
             this.logger.error(error);
+            throw error;
         }
 
         // let symbols = ['AUD/CAD','AUD/CHF','AUD/JPY','AUD/NZD','AUD/USD','CAD/CHF','CAD/JPY','CHF/JPY','EUR/AUD','EUR/CAD','EUR/CHF','EUR/GBP','EUR/JPY','EUR/USD']
@@ -205,8 +206,10 @@ export class MarketDataClient extends AsciiSession {
         if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
             this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
                 if (res) this.logger.info(`LiveQuotes Updated`);
-            }).catch((err) => {
-                throw err;
+            }).catch((error) => {
+                this.eventLog.error(error);
+                this.logger.error(error);
+                throw error;
             });
         }
     }
@@ -218,17 +221,19 @@ export class MarketDataClient extends AsciiSession {
                     this.eventLog.info(`AVGSpreads Inserted`);
                     this.logger.info(`AVGSpreads Inserted`);
                 }
-            }).catch((err) => {
-                throw err;
+            }).catch((error) => {
+                this.eventLog.error(error);
+                this.logger.error(error);
+                throw error;
             });
         }
     }
 
     protected clientTick() {
-        if (!this.isIdling) this.idleDuration += 200;
-        //else this.idleDuration = 0;
+        if (this.isIdling) this.idleDuration += 200;
+        else this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 2 * 1000) {
+        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
             this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
