@@ -165,6 +165,7 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
         }
+        this.updateLiveQuotesTick();
         this.liveQuotes.values().forEach(lq => {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);

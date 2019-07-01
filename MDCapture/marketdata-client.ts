@@ -233,7 +233,7 @@ export class MarketDataClient extends AsciiSession {
             this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
         }
-        //this.updateLiveQuotesTick();
+        this.updateLiveQuotesTick();
         this.liveQuotes.values().forEach(lq => {
             lq.lqFlag = false;
             this.liveQuotes.addUpdate(lq.symbol, lq);

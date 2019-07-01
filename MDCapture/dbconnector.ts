@@ -20,7 +20,7 @@ export class DBConnector {
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
                 database: this.appConfig.DBDatabase,
-                connectionLimit: 20,
+                connectionLimit: 100,
                 idleTimeout: 30
             });
         } else {
