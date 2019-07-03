@@ -19,7 +19,7 @@ export class DBConnector {
                 host: this.appConfig.DBHost,
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
-                database: this.appConfig.DBDatabase,
+                database: this.appConfig.DBName,
                 connectionLimit: this.appConfig.DBLimitConn,
                 idleTimeout: 30
             });
@@ -28,7 +28,7 @@ export class DBConnector {
                 socketPath: this.appConfig.DBSocketPath,
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
-                database: this.appConfig.DBDatabase,
+                database: this.appConfig.DBName,
                 connectionLimit: 20
             });
         }

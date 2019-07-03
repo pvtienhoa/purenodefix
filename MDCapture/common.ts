@@ -19,7 +19,7 @@ export interface IAppConfig {
   NoMsgResetTimeout: number
   MaxAttempts: number
   DBHost: string
-  DBDatabase: string
+  DBName: string
   DBUserName: string
   DBPassword: string
   DBSocketPath: string
