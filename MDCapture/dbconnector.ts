@@ -20,7 +20,7 @@ export class DBConnector {
                 user: this.appConfig.DBUserName,
                 password: this.appConfig.DBPassword,
                 database: this.appConfig.DBDatabase,
-                connectionLimit: 20,
+                connectionLimit: this.appConfig.DBLimitConn,
                 idleTimeout: 30
             });
         } else {
@@ -80,18 +80,17 @@ export class DBConnector {
             var lqParams: any[] = [];
             lqs.forEach(lq => {
                 if (lq.lqFlag) {
-                    lqParams.push([Common.getTimeStamp(this.appConfig.TimeZone, lq.timeStamp), this.appConfig.FBrokerName, lq.bid, lq.ask, Common.roundToFixed(lq.spread, 1), lq.symbol])
+                    lqParams.push([Common.getTimeStamp(this.appConfig.TimeZone, lq.timeStamp), lq.bid, lq.ask, Common.roundToFixed(lq.spread, 1), lq.symbol, this.appConfig.Broker])
                 }
             })
             if (lqParams.length > 0) {
                 this.pool.batch(`
                 UPDATE ${this.appConfig.TblLiveQuotes} SET 
-                    TimeStamp = ?, 
-                    BrokerName = ?, 
+                    TimeStamp = ?,
                     Bid = ?, 
                     Ask = ?, 
                     Spread = ?  
-                WHERE Symbol = ?;`, lqParams).then(
+                WHERE Symbol = ? AND BrokerName = ?;`, lqParams).then(
                     accept(true)
                 ).catch((err: Error) => {
                     this.logger.error(new Error('error updating LQ into DB - ' + err.message))
@@ -111,7 +110,7 @@ export class DBConnector {
             avgSpreads.forEach(avg => {
                 if (avg.avgFlag) {
                     avg.avgCalc();
-                    aqParams.push([Common.getTimeStamp(this.appConfig.TimeZone), this.appConfig.AvgTerm * 60, this.appConfig.FBrokerName, avg.symbol, avg.avgSpread]);
+                    aqParams.push([Common.getTimeStamp(this.appConfig.TimeZone), this.appConfig.AvgTerm * 60, this.appConfig.Broker, avg.symbol, avg.avgSpread]);
                     //avg.reset();
                 }
             });

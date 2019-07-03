@@ -8,14 +8,18 @@ const dbconnector_1 = require("./dbconnector");
 const common_1 = require("./common");
 const LiveQuote_1 = require("./LiveQuote");
 const repo_2 = require("jspurefix/dist/types/FIX4.4/repo");
+const path = require("path");
 class MarketDataClient extends jspurefix_1.AsciiSession {
     constructor(config, appConfig) {
         super(config);
         this.config = config;
         this.appConfig = appConfig;
+        var root = __dirname;
+        const logpath = path.join(root, './../..');
+        const maxFile = this.appConfig.LogDays + 'd';
         this.logReceivedMsgs = true;
-        this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024, true);
+        this.fixLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.messages`, 5 * 1024 * 1024 * 1024, false, true, maxFile, logpath);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.event`, 100 * 1024 * 1024, true, true, maxFile, logpath);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new dbconnector_1.DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new jspurefix_1.Dictionary();
@@ -85,10 +89,10 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
             this.dbConnector.querySymbols().then(symbols => {
                 this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`);
                 symbols.forEach(r => {
-                    let l = new LiveQuote_1.LiveQuote(r.currencypairname, r.requestId, this.appConfig.FBrokerName, 0, 0, r.Digit);
+                    let l = new LiveQuote_1.LiveQuote(r.currencypairname, r.requestId, this.appConfig.Broker, 0, 0, r.Digit);
                     this.liveQuotes.addUpdate(r.currencypairname, l);
                     let mdr = marketdata_factory_1.MarketDataFactory.createMarketDataRequest(l.reqID, repo_2.SubscriptionRequestType.SnapshotAndUpdates, l.symbol, repo_1.MDUpdateType.IncrementalRefresh);
-                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
+                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.Host}: ${this.appConfig.Port}`);
                     this.send(jspurefix_1.MsgType.MarketDataRequest, mdr);
                 });
                 this.InsertAvgSpreadCronJob.start();
@@ -149,9 +153,9 @@ class MarketDataClient extends jspurefix_1.AsciiSession {
         else
             this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-            this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+        if (this.idleDuration >= this.appConfig.NoMsgResetTimeout * 60 * 1000) {
+            this.eventLog.info(`Client has been idle for ${this.appConfig.NoMsgResetTimeout} minutes, Reconnecting`);
+            this.logger.info(`Client has been idle for ${this.appConfig.NoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
         }
         this.updateLiveQuotesTick();

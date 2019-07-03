@@ -26,7 +26,7 @@ class AppNfixLauncher extends launcher_1.Launcher {
     const init = path.join(root, './../../config.json');
     const appConfig = common_1.Common.loadAppConfig(init);
     var failedAttemp = 0;
-    while (failedAttemp < appConfig.FMaxFailAttempNo) {
+    while (failedAttemp < appConfig.MaxAttempts) {
         try {
             var l = new AppNfixLauncher();
             yield l.run();

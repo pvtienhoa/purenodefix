@@ -7,27 +7,29 @@ export enum SubscriptionRequestType {
 }
 
 export interface IAppConfig {
-  FHost: string
-  FPort: number
-  FSenderID: string
-  FTargetID: string
-  FTargetSubID: string
-  FUserName: string
-  FPassword: string
-  FMsgType: string
-  FBrokerName: string
-  FNoMsgResetTimeout: number
-  FMaxFailAttempNo: number
+  Host: string
+  Port: number
+  SenderID: string
+  TargetID: string
+  TargetSubID?: string
+  UserName: string
+  Password: string
+  MsgType: string
+  Broker: string
+  NoMsgResetTimeout: number
+  MaxAttempts: number
   DBHost: string
   DBDatabase: string
   DBUserName: string
   DBPassword: string
   DBSocketPath: string
+  DBLimitConn: number
   TblSymbols: string
   TblLiveQuotes: string
   TblAverageSpreads: string
   AvgTerm: number
   TimeZone: string
+  LogDays: number
 }
 export class Common {
   public static getTimeStamp(timeZone: string, timeStamp?: Date, formatStr: string = 'YYYYMMDD-HH:mm:ss.SSS'): string {
@@ -57,23 +59,23 @@ export class Common {
       "application": {
         "reconnectSeconds": 10,
         "type": "initiator",
-        "name": appConfig.FBrokerName,
+        "name": appConfig.Broker,
         "tcp": {
-          "host": appConfig.FHost,
-          "port": appConfig.FPort
+          "host": appConfig.Host,
+          "port": appConfig.Port
         },
         "protocol": "ascii",
         "dictionary": "repo44"
       },
-      "Username": appConfig.FUserName,
-      "Password": appConfig.FPassword,
+      "Username": appConfig.UserName,
+      "Password": appConfig.Password,
       "EncryptMethod": 0,
       "ResetSeqNumFlag": true,
       "HeartBtInt": 30,
-      "SenderCompId": appConfig.FSenderID,
-      "TargetCompID": appConfig.FTargetID,
+      "SenderCompId": appConfig.SenderID,
+      "TargetCompID": appConfig.TargetID,
       // "TargetSubID": appConfig.FTargetSubID,
-      "BeginString": appConfig.FMsgType
+      "BeginString": appConfig.MsgType
     }
   }
 

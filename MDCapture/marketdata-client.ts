@@ -24,6 +24,7 @@ import { IAppConfig, Common } from './common';
 import { EventEmitter } from 'events';
 import { LiveQuote } from './LiveQuote'
 import { SubscriptionRequestType } from 'jspurefix/dist/types/FIX4.4/repo';
+import * as path from 'path'
 import * as moment from 'moment'
 
 
@@ -41,9 +42,12 @@ export class MarketDataClient extends AsciiSession {
     private clientTickHandler: number
     constructor(public readonly config: IJsFixConfig, private readonly appConfig: IAppConfig) {
         super(config);
+        var root = __dirname;
+        const logpath = path.join(root, './../..');
+        const maxFile = this.appConfig.LogDays + 'd';
         this.logReceivedMsgs = true;
-        this.fixLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.messages`, 5 * 1024 * 1024 * 1024);
-        this.eventLog = config.logFactory.plain(`${this.appConfig.FMsgType}-${this.appConfig.FUserName}-${this.appConfig.FSenderID}-${this.appConfig.FTargetID}.event`, 100 * 1024 * 1024, true);
+        this.fixLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.messages`, 5 * 1024 * 1024 * 1024, false, true, maxFile, logpath);
+        this.eventLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.event`, 100 * 1024 * 1024, true, true, maxFile, logpath);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
         this.liveQuotes = new Dictionary<LiveQuote>();
@@ -134,14 +138,14 @@ export class MarketDataClient extends AsciiSession {
                 this.eventLog.info(`Symbol list accquired, count: ${symbols.length}`)
                 // Query data from Symbols table and create LiveQuote Dictionary
                 symbols.forEach(r => {
-                    let l = new LiveQuote(r.currencypairname, r.requestId, this.appConfig.FBrokerName, 0, 0, r.Digit);
+                    let l = new LiveQuote(r.currencypairname, r.requestId, this.appConfig.Broker, 0, 0, r.Digit);
                     this.liveQuotes.addUpdate(r.currencypairname, l);
 
                     // Create Martket Data Request with symbolist
                     let mdr: IMarketDataRequest = MarketDataFactory.createMarketDataRequest(l.reqID, SubscriptionRequestType.SnapshotAndUpdates, l.symbol, MDUpdateType.IncrementalRefresh);
 
                     // Send MD Request to server
-                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.FHost}: ${this.appConfig.FPort}`);
+                    this.eventLog.info(`Sending MDRequest to host: ${this.appConfig.Host}: ${this.appConfig.Port}`);
                     this.send(MsgType.MarketDataRequest, mdr)
                 });
 
@@ -210,9 +214,9 @@ export class MarketDataClient extends AsciiSession {
         if (this.isIdling) this.idleDuration += 200;
         else this.idleDuration = 0;
         this.isIdling = true;
-        if (this.idleDuration >= this.appConfig.FNoMsgResetTimeout * 60 * 1000) {
-            this.eventLog.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
-            this.logger.info(`Client has been idle for ${this.appConfig.FNoMsgResetTimeout} minutes, Reconnecting`);
+        if (this.idleDuration >= this.appConfig.NoMsgResetTimeout * 60 * 1000) {
+            this.eventLog.info(`Client has been idle for ${this.appConfig.NoMsgResetTimeout} minutes, Reconnecting`);
+            this.logger.info(`Client has been idle for ${this.appConfig.NoMsgResetTimeout} minutes, Reconnecting`);
             this.done();
         }
         this.updateLiveQuotesTick();
@@ -222,7 +226,7 @@ export class MarketDataClient extends AsciiSession {
         });
     }
 
-    protected cleanup (): void {
+    protected cleanup(): void {
         clearInterval(this.clientTickHandler);
         this.clientTickHandler = null;
 

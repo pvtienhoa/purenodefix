@@ -33,22 +33,22 @@ class Common {
             "application": {
                 "reconnectSeconds": 10,
                 "type": "initiator",
-                "name": appConfig.FBrokerName,
+                "name": appConfig.Broker,
                 "tcp": {
-                    "host": appConfig.FHost,
-                    "port": appConfig.FPort
+                    "host": appConfig.Host,
+                    "port": appConfig.Port
                 },
                 "protocol": "ascii",
                 "dictionary": "repo44"
             },
-            "Username": appConfig.FUserName,
-            "Password": appConfig.FPassword,
+            "Username": appConfig.UserName,
+            "Password": appConfig.Password,
             "EncryptMethod": 0,
             "ResetSeqNumFlag": true,
             "HeartBtInt": 30,
-            "SenderCompId": appConfig.FSenderID,
-            "TargetCompID": appConfig.FTargetID,
-            "BeginString": appConfig.FMsgType
+            "SenderCompId": appConfig.SenderID,
+            "TargetCompID": appConfig.TargetID,
+            "BeginString": appConfig.MsgType
         };
     }
     static delay(p) {

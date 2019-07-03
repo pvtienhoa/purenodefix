@@ -25,7 +25,7 @@ class AppNfixLauncher extends Launcher {
   // });
 
   var failedAttemp = 0
-  while (failedAttemp < appConfig.FMaxFailAttempNo) {
+  while (failedAttemp < appConfig.MaxAttempts) {
     try {
       var l = new AppNfixLauncher();
       await l.run();
