@@ -184,7 +184,7 @@ export class MarketDataClient extends AsciiSession {
     protected updateLiveQuotesTick(): void {
         if (this.liveQuotes && this.dbConnector && this.sessionState.state === SessionState.PeerLoggedOn) {
             this.dbConnector.updateLiveQuotes(this.liveQuotes.values()).then((res) => {
-                if (res) this.logger.info(`LiveQuotes Updated`);
+                //if (res) this.logger.info(`LiveQuotes Updated`);
             }).catch((error) => {
                 this.eventLog.error(error);
                 this.logger.error(error);
@@ -199,7 +199,7 @@ export class MarketDataClient extends AsciiSession {
             this.dbConnector.insertAvgSpreads(this.liveQuotes.values()).then((res) => {
                 if (res) {
                     this.eventLog.info(`AVGSpreads Inserted`);
-                    this.logger.info(`AVGSpreads Inserted`);
+                    //this.logger.info(`AVGSpreads Inserted`);
                 }
             }).catch((error) => {
                 this.eventLog.error(error);
