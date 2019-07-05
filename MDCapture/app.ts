@@ -9,7 +9,7 @@ import * as path from 'path'
 class AppNfixLauncher extends Launcher {
   public constructor() {
     super(
-      './config.json')
+      './../config.json')
   }
   protected getInitiator(config: IJsFixConfig): Promise<any> {
     return initiator(config, c => new MarketDataClient(c, this.appConfig), 5000)
@@ -18,7 +18,7 @@ class AppNfixLauncher extends Launcher {
 
 (async () => {
   var root = __dirname
-  const init = path.join(root, './../config.json')
+  const init = path.join(root, './../../config.json')
   const appConfig = Common.loadAppConfig(init);
   // l.run().then(() => {
   //   console.log('finished.')
