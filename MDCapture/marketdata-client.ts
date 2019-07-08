@@ -46,7 +46,7 @@ export class MarketDataClient extends AsciiSession {
         const logpath = path.join(root, './../..');
         const maxFile = this.appConfig.LogDays + 'd';
         this.logReceivedMsgs = true;
-        this.fixLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.messages`, 5 * 1024 * 1024 * 1024, false, true, maxFile, logpath);
+        this.fixLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.messages`, 5 * 1024 * 1024 * 1024, false, true, maxFile, logpath);//
         this.eventLog = config.logFactory.plain(`${this.appConfig.MsgType}-${this.appConfig.UserName}-${this.appConfig.SenderID}-${this.appConfig.TargetID}.event`, 100 * 1024 * 1024, true, true, maxFile, logpath);
         this.logger = config.logFactory.logger(`${this.me}:MDClient`);
         this.dbConnector = new DBConnector(this.appConfig, config.logFactory);
