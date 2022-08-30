@@ -16,7 +16,7 @@
     "jspurefix": "github:pvtienhoa/jspurefix",
     "mariadb": "^2.0.5",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.25",
+    "moment-timezone": "^0.5.35",
     "node-cron": "^2.0.3",
     "request": "^2.88.0"
   },
